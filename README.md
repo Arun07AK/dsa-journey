@@ -6,11 +6,16 @@ recognisable, and build a tool for the ones that don't click from reading alone.
 
 Primary language: **C++**.
 
-## The two files that matter
+## The files that matter
+
+Currently **76 / 250** on the NeetCode 250 roadmap (Easy 20/60 · Medium 49/155 · Hard 7/35),
+at the end of the Graphs section with 16 of 21 done.
 
 | File | What it is |
 |---|---|
-| [`STRATEGY.md`](STRATEGY.md) | The 15 patterns in priority order, and the daily rule I actually keep (one problem a day — an easy one still counts). |
+| [`PROGRESS.md`](PROGRESS.md) | The tracker. Counts per topic against the official NeetCode 250 denominators, the streak, and what the numbers actually mean. Single source of truth — no other file duplicates these. |
+| [`RESOURCES.md`](RESOURCES.md) | Researched, link-checked resources mapped to the topics still ahead, not a generic list. |
+| [`STRATEGY.md`](STRATEGY.md) | The NeetCode 250 topics in roadmap order, current counts, and the daily rule I actually keep (one problem a day — an easy one still counts). |
 | [`solved.md`](solved.md) | The growing pattern library. One entry per problem: the reusable idea, the key insight, and *what I'd recognise if I saw it cold again*. That last line is the whole point — it turns solving into recognising, which is what interviews test. |
 
 ## Interactive visualizers
@@ -36,7 +41,11 @@ stuff) and [Finish the 150](finish-150.html) (the graphs/DP back half).
 ## Layout
 
 ```
-STRATEGY.md              the 15 patterns + the daily rule
+PROGRESS.md              the tracker — counts, streak, what they mean (source of truth)
+RESOURCES.md             researched resources, mapped to the topics still ahead
+CLAUDE.md                the teaching contract — how Claude is meant to coach, not solve
+RESUME.md                session handoff; read first in a fresh cloud session
+STRATEGY.md              the approach and the daily rules
 solved.md                the pattern library (grows one entry at a time)
 learning-method.html     how DSA is actually learned
 finish-150.html          the remaining graphs / DP problem set

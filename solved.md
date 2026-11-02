@@ -1,14 +1,16 @@
 # solved.md — my growing pattern library
 
-Not a tracker. Not a streak. A **library that grows.**
+A **library that grows** — kept alongside the counts, not instead of them.
 Every problem I solve, I write down the *pattern* it taught me — so after a month this file
 is a thing I'm proud of, not a number I'm scared to break.
 
 **The only rule:** one problem a day. On a bad day, one *easy* problem still counts.
-On a great day, do five. Missing a day is not failure — not writing in here for a *week* is the
-only thing to notice. There is no streak to break, so there's nothing to quit.
+On a great day, do five. The streak is tracked on the NeetCode dashboard and it's allowed to
+break — when it does, write the zero down and pick the next problem in the same sitting.
+Missing a day is not failure; not writing in here for a *week* is the thing to notice.
 
-> Starting point (Jun 2026): ~75 done on Striver's TUF. Not zero. Building on a foundation.
+> Where this stands (Nov 2026): **76 / 250**, end of the Graphs section (16/21).
+> Full breakdown in [`PROGRESS.md`](PROGRESS.md).
 
 ---
 
@@ -27,27 +29,10 @@ solving into *recognizing* — which is what interviews actually test.
 
 ---
 
-## Pattern coverage (fills in as I go — this is my visible progress)
+## Coverage
 
-| Pattern | Done | Feel: 🟢 solid / 🟡 shaky / ⬜ untouched |
-|---------|------|------|
-| Arrays & Hashing | | ⬜ |
-| Two Pointers | | ⬜ |
-| Sliding Window | | ⬜ |
-| Binary Search | | ⬜ |
-| Stack & Queue | | ⬜ |
-| Linked List | | ⬜ |
-| Trees (BFS/DFS) | | ⬜ |
-| Graphs (BFS/DFS) | | ⬜ |
-| Backtracking/Recursion | | ⬜ |
-| Dynamic Programming | | ⬜ |
-| Greedy | | ⬜ |
-| Heap / Priority Queue | | ⬜ |
-| Intervals | | ⬜ |
-| Tries | | ⬜ |
-| Monotonic Stack | | ⬜ |
-
-When a row turns 🟢, that's real, visible progress — a capability gained, not a count.
+Per-topic counts and feel live in [`PROGRESS.md`](PROGRESS.md), so they're in exactly one
+place. This file is the log — the part that can't be read off a dashboard.
 
 ---
 
