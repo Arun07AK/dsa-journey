@@ -3,6 +3,10 @@
 **The single source of truth for counts.** `solved.md` holds the log, this holds the numbers.
 Update it whenever the dashboard moves. Don't duplicate these tables anywhere else.
 
+**Interactive tracker:** [`index.html`](index.html) — open it to set per-topic counts, see the
+reconciliation check, and export the table below. Hosted copy:
+<https://claude.ai/artifact/1vgcwduHzpeHdZVi7npXet>
+
 **Last synced with the dashboard:** 2026-11-02
 
 ---
@@ -50,7 +54,8 @@ Feel: 🟢 could teach it · 🟡 shaky · ⬜ untouched
 | | **Total** | **76** | **250** | |
 
 **Fill in rows 1–10 next time you're on the dashboard.** They're the only unknown left, and
-they matter — see the backlog note below.
+they matter — see the backlog note below. Fastest way: open `index.html`, type the counts into
+the greyed rows, then hit **Export PROGRESS.md table** and paste the result over this table.
 
 ---
 

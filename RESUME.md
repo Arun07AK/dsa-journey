@@ -24,6 +24,8 @@ Current streak **0 days** · best streak **54 days**.
   arrays (LC 33, LC 153), BFS/DFS, multi-source BFS (LC 994), backtracking trees.
 - **Counts live in [`PROGRESS.md`](PROGRESS.md)** — the single source of truth. This file
   carries only the one-line state; don't duplicate the tables here.
+- **`index.html`** is the dashboard: editable per-topic counts, reconciliation, and Bit the
+  buddy. It exports the PROGRESS.md table, so the markdown stays canonical.
 
 ## Next action
 

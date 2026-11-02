@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!--ARTIFACT-HEAD-->
+<title>DSA Journey</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: one column — summary ring first, buddy second, then the 18-topic ladder you operate. */
+:root{
+  --bg:#F3F5FA; --bg-tint:#E9EDF6; --surface:#FFFFFF; --surface-2:#F7F9FD;
+  --line:#DBE1EE; --line-strong:#C3CCDE;
+  --ink:#131926; --soft:#58637A; --faint:#8A94A8;
+  --accent:#17876B; --accent-soft:#D5EFE6; --accent-ink:#0C5745; --on-accent:#FFFFFF;
+  --amber:#B06B12; --amber-soft:#FAE9D2;
+  --violet:#5B4FC7; --violet-soft:#E4E1FA;
+  --hard:#B8403B; --hard-soft:#F9DEDC;
+  --shadow:0 1px 2px rgba(19,25,38,.05), 0 12px 28px -18px rgba(19,25,38,.35);
+  --display:'Bricolage Grotesque',ui-sans-serif,system-ui,sans-serif;
+  --ui:'Figtree',ui-sans-serif,system-ui,-apple-system,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  --r:14px;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --bg:#0D131F; --bg-tint:#121A29; --surface:#161F30; --surface-2:#1B2538;
+  --line:#2A3650; --line-strong:#3A4863;
+  --ink:#E9EEF9; --soft:#9CA8BF; --faint:#6E7A91;
+  --accent:#3ACFA2; --accent-soft:#103A2F; --accent-ink:#5EE3B6; --on-accent:#062A21;
+  --amber:#E8A94F; --amber-soft:#3A2A12;
+  --violet:#9A8FF2; --violet-soft:#241F44;
+  --hard:#EE7A74; --hard-soft:#3B1E1C;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 14px 30px -18px rgba(0,0,0,.8);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0D131F; --bg-tint:#121A29; --surface:#161F30; --surface-2:#1B2538;
+  --line:#2A3650; --line-strong:#3A4863;
+  --ink:#E9EEF9; --soft:#9CA8BF; --faint:#6E7A91;
+  --accent:#3ACFA2; --accent-soft:#103A2F; --accent-ink:#5EE3B6; --on-accent:#062A21;
+  --amber:#E8A94F; --amber-soft:#3A2A12;
+  --violet:#9A8FF2; --violet-soft:#241F44;
+  --hard:#EE7A74; --hard-soft:#3B1E1C;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 14px 30px -18px rgba(0,0,0,.8);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--ui); font-size:15px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.page{
+  max-width:720px; margin:0 auto;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:24px 56px;
+  display:flex; flex-direction:column; gap:22px;
+}
+h1,h2,h3{font-family:var(--display); margin:0; text-wrap:balance; letter-spacing:-.015em}
+.mono{font-family:var(--mono); font-variant-numeric:tabular-nums}
+.eyebrow{font-family:var(--mono); font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--faint)}
+
+/* masthead */
+.masthead{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap}
+.brand{display:flex; align-items:center; gap:9px; font-family:var(--display); font-weight:800; font-size:19px}
+.brand-mark{width:22px;height:22px;flex:none;display:grid;place-items:center;border-radius:7px;background:var(--accent);color:var(--on-accent);font-size:11px;font-weight:700}
+.sheet{font-family:var(--mono); font-size:11px; color:var(--soft); border:1px solid var(--line); border-radius:999px; padding:5px 11px; background:var(--surface)}
+.icon-btn{font:inherit; font-size:13px; cursor:pointer; background:var(--surface); color:var(--soft);
+  border:1px solid var(--line); border-radius:999px; padding:5px 12px}
+.icon-btn:hover{color:var(--ink); border-color:var(--line-strong)}
+
+/* summary */
+.summary{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow);
+  padding:20px; display:flex; gap:22px; align-items:center; flex-wrap:wrap}
+.ring-wrap{position:relative; width:132px; height:132px; flex:none}
+.ring-wrap svg{display:block; transform:rotate(-90deg)}
+.ring-center{position:absolute; inset:0; display:grid; place-content:center; text-align:center; line-height:1.05}
+.ring-num{font-family:var(--display); font-weight:800; font-size:34px; letter-spacing:-.03em; font-variant-numeric:tabular-nums}
+.ring-of{font-family:var(--mono); font-size:11px; color:var(--faint)}
+.summary-main{flex:1 1 240px; min-width:0; display:flex; flex-direction:column; gap:13px}
+.dsplit{display:flex; flex-direction:column; gap:8px}
+.drow{display:grid; grid-template-columns:62px 1fr auto; align-items:center; gap:10px}
+.dname{font-size:12.5px; color:var(--soft); font-weight:600}
+.dbar{height:7px; border-radius:99px; background:var(--bg-tint); overflow:hidden}
+.dbar i{display:block; height:100%; border-radius:99px}
+.dval{font-family:var(--mono); font-size:11.5px; color:var(--soft); font-variant-numeric:tabular-nums}
+.chips{display:flex; gap:8px; flex-wrap:wrap}
+.chip{display:inline-flex; align-items:baseline; gap:6px; border-radius:999px; padding:5px 11px;
+  font-size:12px; background:var(--bg-tint); border:1px solid var(--line)}
+.chip b{font-family:var(--mono); font-weight:600}
+.chip.warm{background:var(--amber-soft); border-color:transparent; color:var(--amber)}
+
+/* buddy */
+.buddy{display:flex; gap:14px; align-items:flex-start;
+  background:linear-gradient(180deg,var(--surface),var(--surface-2));
+  border:1px solid var(--line); border-radius:var(--r); padding:16px; box-shadow:var(--shadow)}
+.buddy-svg{width:70px;height:70px;flex:none;cursor:pointer;border:0;background:none;padding:0;border-radius:12px}
+.buddy-svg:focus-visible{outline:2px solid var(--accent); outline-offset:3px}
+.bob{animation:bob 4.5s ease-in-out infinite; transform-origin:50% 85%}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-4px) rotate(1deg)}}
+.blink{animation:blink 6s infinite}
+@keyframes blink{0%,94%,100%{transform:scaleY(1)}96%,98%{transform:scaleY(.08)}}
+.buddy-text{flex:1 1 auto; min-width:0}
+.buddy-name{font-family:var(--display); font-weight:700; font-size:13px; color:var(--accent); margin-bottom:2px}
+.buddy-line{font-size:14.5px; color:var(--ink)}
+.buddy-hint{font-size:11.5px; color:var(--faint); margin-top:7px}
+
+/* reconcile */
+.note{display:flex; gap:10px; align-items:flex-start; border-radius:var(--r); padding:13px 15px; font-size:13.5px;
+  background:var(--violet-soft); color:var(--ink); border:1px solid transparent}
+.note.ok{background:var(--accent-soft)}
+.note.bad{background:var(--hard-soft)}
+.note b{font-family:var(--mono); font-weight:600}
+
+/* ladder */
+.ladder-head{display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap}
+.ladder{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); overflow:hidden; box-shadow:var(--shadow)}
+.row{display:grid; grid-template-columns:20px minmax(0,1fr) 74px 92px 30px; gap:10px; align-items:center;
+  padding:11px 15px; border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row.current{background:var(--violet-soft)}
+.row.done .rname{color:var(--soft)}
+.rnum{font-family:var(--mono); font-size:11px; color:var(--faint); font-variant-numeric:tabular-nums}
+.rname{font-weight:600; font-size:14px; min-width:0; overflow-wrap:anywhere}
+.rname .tag{font-family:var(--mono); font-size:9.5px; letter-spacing:.1em; text-transform:uppercase;
+  padding:2px 6px; border-radius:5px; margin-left:7px; vertical-align:1.5px; background:var(--violet); color:#fff; font-weight:600}
+.rbar{height:8px; border-radius:99px; background:var(--bg-tint); overflow:hidden}
+.rbar i{display:block;height:100%;border-radius:99px;background:var(--accent);transition:width .35s cubic-bezier(.2,.7,.2,1)}
+.rbar.unknown{background:transparent; border:1px dashed var(--line-strong); opacity:.75}
+.rctl{display:flex; align-items:center; justify-content:flex-end; gap:4px}
+.stepper{width:22px;height:22px;flex:none;display:grid;place-items:center;cursor:pointer;
+  border:1px solid var(--line); background:var(--surface-2); color:var(--soft); border-radius:6px; font-size:13px; line-height:1; padding:0}
+.stepper:hover:not(:disabled){color:var(--ink); border-color:var(--line-strong)}
+.stepper:disabled{opacity:.35; cursor:not-allowed}
+.cnt{width:40px; text-align:center; font-family:var(--mono); font-size:12.5px; font-variant-numeric:tabular-nums;
+  border:1px solid transparent; background:transparent; color:var(--ink); border-radius:6px; padding:3px 0; -moz-appearance:textfield}
+.cnt::-webkit-outer-spin-button,.cnt::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.cnt:hover{border-color:var(--line)}
+.cnt:focus{outline:none; border-color:var(--accent); background:var(--surface)}
+.cnt::placeholder{color:var(--faint)}
+.rtot{font-family:var(--mono); font-size:11.5px; color:var(--faint); text-align:left; white-space:nowrap}
+
+/* tools */
+.tools{display:flex; gap:9px; flex-wrap:wrap}
+.btn{font:inherit; font-size:13px; font-weight:600; cursor:pointer; border-radius:9px; padding:9px 14px;
+  border:1px solid var(--line); background:var(--surface); color:var(--ink)}
+.btn:hover{border-color:var(--line-strong)}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:var(--on-accent)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn:focus-visible,.stepper:focus-visible,.icon-btn:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.links{display:flex; flex-wrap:wrap; gap:7px}
+.links a{font-size:12.5px; color:var(--soft); text-decoration:none; border:1px solid var(--line);
+  border-radius:999px; padding:5px 11px; background:var(--surface)}
+.links a:hover{color:var(--ink); border-color:var(--line-strong)}
+.foot{font-size:12px; color:var(--faint); text-align:center}
+.foot code{font-family:var(--mono); font-size:11px}
+dialog{border:1px solid var(--line); border-radius:var(--r); background:var(--surface); color:var(--ink);
+  padding:0; max-width:min(620px,92vw); box-shadow:var(--shadow)}
+dialog::backdrop{background:rgba(8,12,20,.55)}
+.dlg{padding:18px; display:flex; flex-direction:column; gap:12px}
+.dlg textarea{width:100%; height:300px; font-family:var(--mono); font-size:11.5px; line-height:1.5;
+  border:1px solid var(--line); border-radius:9px; padding:11px; background:var(--surface-2); color:var(--ink); resize:vertical}
+@media (max-width:480px){
+  .row{grid-template-columns:18px minmax(0,1fr) 92px; gap:9px}
+  .rtot,.rbar{display:none}
+  .ring-wrap{width:112px;height:112px}
+  .summary{padding:16px; gap:16px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important; animation-iteration-count:1!important; transition-duration:.001ms!important}
+}
+</style>
+</head>
+<body>
+<!--ARTIFACT-BODY-->
+<div class="page">
+
+  <header class="masthead">
+    <div class="brand"><span class="brand-mark">&#9670;</span><span>DSA Journey</span></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="sheet">NeetCode 250</span>
+      <button class="icon-btn" id="themeBtn" type="button">Theme</button>
+    </div>
+  </header>
+
+  <section class="summary">
+    <div class="ring-wrap">
+      <svg width="132" height="132" viewBox="0 0 132 132" aria-hidden="true">
+        <circle cx="66" cy="66" r="56" fill="none" stroke="var(--bg-tint)" stroke-width="13"></circle>
+        <circle id="ringFill" cx="66" cy="66" r="56" fill="none" stroke="var(--accent)" stroke-width="13"
+                stroke-linecap="round" stroke-dasharray="351.86" stroke-dashoffset="351.86"
+                style="transition:stroke-dashoffset .6s cubic-bezier(.2,.7,.2,1)"></circle>
+      </svg>
+      <div class="ring-center">
+        <span class="ring-num" id="ringNum">0</span>
+        <span class="ring-of">of 250 solved</span>
+      </div>
+    </div>
+    <div class="summary-main">
+      <div class="dsplit" id="dsplit"></div>
+      <div class="chips">
+        <span class="chip">Streak <b id="cStreak">0</b></span>
+        <span class="chip warm">Best <b id="bStreak">54</b> days</span>
+        <span class="chip"><b id="leftNum">174</b> left</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="buddy">
+    <button class="buddy-svg" id="buddyBtn" type="button" aria-label="Bit says something else">
+      <svg viewBox="0 0 80 80" width="70" height="70" aria-hidden="true">
+        <g class="bob">
+          <line x1="26" y1="22" x2="18" y2="12" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="54" y1="22" x2="62" y2="12" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="17" cy="10" r="4" fill="var(--amber)"/>
+          <circle cx="63" cy="10" r="4" fill="var(--violet)"/>
+          <rect x="16" y="20" width="48" height="44" rx="16" fill="var(--accent)"/>
+          <rect x="22" y="26" width="36" height="24" rx="11" fill="var(--surface)" opacity=".96"/>
+          <g class="blink" style="transform-origin:center 38px">
+            <circle cx="33" cy="37" r="3.6" fill="var(--ink)"/>
+            <circle cx="47" cy="37" r="3.6" fill="var(--ink)"/>
+          </g>
+          <path id="mouth" d="M34 55 Q40 60 46 55" stroke="var(--surface)" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+          <circle cx="25" cy="55" r="3" fill="var(--amber)" opacity=".5"/>
+          <circle cx="55" cy="55" r="3" fill="var(--amber)" opacity=".5"/>
+        </g>
+      </svg>
+    </button>
+    <div class="buddy-text">
+      <div class="buddy-name">Bit</div>
+      <div class="buddy-line" id="buddyLine">Hey. Let's see where things stand.</div>
+      <div class="buddy-hint">Tap Bit for another thought.</div>
+    </div>
+  </section>
+
+  <div class="note" id="note"></div>
+
+  <div class="ladder-head">
+    <h2 style="font-size:16px">The ladder</h2>
+    <span class="eyebrow">18 topics &middot; roadmap order</span>
+  </div>
+  <section class="ladder" id="ladder"></section>
+
+  <div class="tools">
+    <button class="btn primary" id="exportBtn" type="button">Export PROGRESS.md table</button>
+    <button class="btn" id="resetBtn" type="button">Reset to saved state</button>
+  </div>
+
+  <div class="links">
+    <a href="PROGRESS.md">PROGRESS.md</a>
+    <a href="RESOURCES.md">RESOURCES.md</a>
+    <a href="solved.md">solved.md</a>
+    <a href="visualizations/sliding-window.html">Sliding window</a>
+    <a href="visualizations/Graph/graph-visualizer.html">BFS / DFS</a>
+    <a href="visualizations/Graph/rotting-oranges.html">Rotting oranges</a>
+    <a href="visualizations/backtracking/backtracking-visualizer.html">Backtracking</a>
+  </div>
+
+  <p class="foot">Counts you set here live in this browser. <code>PROGRESS.md</code> stays the source of truth &mdash; use Export to update it.</p>
+</div>
+
+<dialog id="dlg">
+  <form method="dialog" class="dlg">
+    <h2 style="font-size:16px">Paste this into PROGRESS.md</h2>
+    <p style="font-size:13px;color:var(--soft);margin:0">Replaces the topic table. The overall line is included.</p>
+    <textarea id="dlgText" readonly spellcheck="false"></textarea>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" value="close" type="submit">Close</button>
+      <button class="btn primary" id="copyBtn" type="button">Copy</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(function(){
+  "use strict";
+  var TOPICS=[
+    {n:1,name:"Arrays & Hashing",total:22},{n:2,name:"Two Pointers",total:13},
+    {n:3,name:"Sliding Window",total:9},{n:4,name:"Binary Search",total:14},
+    {n:5,name:"Linked List",total:14},{n:6,name:"Stack",total:14},
+    {n:7,name:"Trees",total:23},{n:8,name:"Tries",total:4},
+    {n:9,name:"Backtracking",total:17},{n:10,name:"Heap / Priority Queue",total:12},
+    {n:11,name:"Graphs",total:21},{n:12,name:"Advanced Graphs",total:10},
+    {n:13,name:"1-D Dynamic Programming",total:17},{n:14,name:"2-D Dynamic Programming",total:16},
+    {n:15,name:"Greedy",total:14},{n:16,name:"Intervals",total:7},
+    {n:17,name:"Bit Manipulation",total:10},{n:18,name:"Math & Geometry",total:13}
+  ];
+  var TOTAL=250, OVERALL=76, STREAK={cur:0,best:54};
+  var DIFF=[{k:"Easy",s:20,t:60,c:"var(--accent)"},{k:"Medium",s:49,t:155,c:"var(--amber)"},{k:"Hard",s:7,t:35,c:"var(--hard)"}];
+  // Confirmed from the dashboard. Topics 1-10 are deliberately null, not zero: unknown is not the same as none.
+  var BASE={11:16,12:0,13:0,14:0,15:0,16:0,17:0,18:0};
+  var KEY="dsa-journey-progress-v1";
+  var solved={};
+
+  function load(){
+    TOPICS.forEach(function(t){ solved[t.n]=(t.n in BASE)?BASE[t.n]:null; });
+    try{
+      var raw=localStorage.getItem(KEY);
+      if(raw){ var o=JSON.parse(raw); TOPICS.forEach(function(t){
+        if(o && Object.prototype.hasOwnProperty.call(o,t.n)){
+          var v=o[t.n]; solved[t.n]=(v===null||v==="")?null:Math.max(0,Math.min(t.total,parseInt(v,10)||0));
+        }}); }
+    }catch(e){}
+  }
+  function save(){ try{ localStorage.setItem(KEY,JSON.stringify(solved)); }catch(e){} }
+
+  function placed(){ return TOPICS.reduce(function(a,t){ return a+(solved[t.n]===null?0:solved[t.n]); },0); }
+  function unknownCount(){ return TOPICS.filter(function(t){ return solved[t.n]===null; }).length; }
+  // The live topic is where the dashboard says they are (Graphs), not the first row with a gap.
+  // Unknown rows are skipped: an unfilled count is not evidence of unfinished work.
+  var CURRENT_N=11;
+  function firstOpen(){
+    var i,t;
+    for(i=CURRENT_N-1;i<TOPICS.length;i++){ t=TOPICS[i]; if(solved[t.n]!==null&&solved[t.n]<t.total) return t; }
+    for(i=0;i<TOPICS.length;i++){ t=TOPICS[i]; if(solved[t.n]!==null&&solved[t.n]<t.total) return t; }
+    for(i=0;i<TOPICS.length;i++){ t=TOPICS[i]; if(solved[t.n]===null) return t; }
+    return null;
+  }
+
+  var elLadder=document.getElementById("ladder");
+  function buildLadder(){
+    var html="";
+    TOPICS.forEach(function(t){
+      var v=solved[t.n], done=(v!==null&&v>=t.total), pct=(v===null)?0:Math.round(v/t.total*100);
+      html+='<div class="row'+(done?" done":"")+'" data-n="'+t.n+'">'
+        + '<span class="rnum">'+t.n+'</span>'
+        + '<span class="rname">'+t.name+'<span class="tag" hidden>now</span></span>'
+        + '<span class="rbar'+(v===null?" unknown":"")+'"><i style="width:'+pct+'%"></i></span>'
+        + '<span class="rctl">'
+          + '<button class="stepper" type="button" data-d="-1" aria-label="One fewer in '+t.name+'">&minus;</button>'
+          + '<input class="cnt" type="number" inputmode="numeric" min="0" max="'+t.total+'" placeholder="&mdash;" value="'+(v===null?"":v)+'" aria-label="Problems solved in '+t.name+'">'
+          + '<button class="stepper" type="button" data-d="1" aria-label="One more in '+t.name+'">+</button>'
+        + '</span>'
+        + '<span class="rtot">/'+t.total+'</span></div>';
+    });
+    elLadder.innerHTML=html;
+  }
+
+  var LINES_UNKNOWN=[
+    "There are {u} topics I can't see yet. Fill any one in and the picture sharpens.",
+    "Tell me what you've done in the early topics — type a number in any greyed row.",
+    "I'd rather show you nothing than show you a guess. Fill in a row when you can."
+  ];
+  var LINES_CURRENT=[
+    "{left} left in {topic}. That's {days}.",
+    "{topic} is the live one. {left} to go, then it closes for good.",
+    "You're {pct}% through {topic}. The last few are the ones that make it stick."
+  ];
+  var LINES_DONE=[
+    "Every topic is full. That's the whole 250.",
+    "The ladder is finished. Go build something with it."
+  ];
+  var LINES_GENERAL=[
+    "{medium} mediums done. That's the number interviews actually care about.",
+    "{left} problems left. At one a day that's {months} — and you've got until mid-2027.",
+    "Your best run was {best} days. {left} left is about three more of those.",
+    "No streak today, and that's just a number. The next one starts whenever you open a problem."
+  ];
+
+  function pick(arr,seed){ return arr[seed%arr.length]; }
+  function fmtDays(n){ if(n<=1) return "a day"; if(n<7) return n+" days"; var w=Math.round(n/7); return w<=1?"about a week":"about "+w+" weeks"; }
+  function fill(s,ctx){ return s.replace(/\{(\w+)\}/g,function(m,k){ return (k in ctx)?ctx[k]:m; }); }
+
+  var spin=0;
+  function speak(){
+    var cur=firstOpen(), unk=unknownCount(), left=TOTAL-OVERALL;
+    var pool, ctx={left:left,best:STREAK.best,medium:49,u:unk,months:"late April 2027"};
+    if(!cur){ pool=LINES_DONE; }
+    else{
+      ctx.topic=cur.name;
+      var have=(solved[cur.n]===null?0:solved[cur.n]);
+      ctx.left=cur.total-have; ctx.days=fmtDays(cur.total-have);
+      ctx.pct=Math.round(have/cur.total*100);
+      pool=(unk>0 && spin%3===0)?LINES_UNKNOWN:(spin%2===0?LINES_CURRENT:LINES_GENERAL);
+      if(unk>0 && spin%3===0){ ctx.left=left; }
+    }
+    document.getElementById("buddyLine").textContent=fill(pick(pool,spin),ctx);
+    spin++;
+  }
+
+  function render(){
+    var p=placed(), unk=unknownCount(), cur=firstOpen();
+    document.getElementById("ringNum").textContent=OVERALL;
+    var C=2*Math.PI*56;
+    document.getElementById("ringFill").style.strokeDashoffset=String(C-(OVERALL/TOTAL)*C);
+    document.getElementById("cStreak").textContent=STREAK.cur;
+    document.getElementById("bStreak").textContent=STREAK.best;
+    document.getElementById("leftNum").textContent=TOTAL-OVERALL;
+
+    document.getElementById("dsplit").innerHTML=DIFF.map(function(d){
+      return '<div class="drow"><span class="dname">'+d.k+'</span>'
+        +'<span class="dbar"><i style="width:'+(d.s/d.t*100)+'%;background:'+d.c+'"></i></span>'
+        +'<span class="dval">'+d.s+" / "+d.t+'</span></div>';
+    }).join("");
+
+    var note=document.getElementById("note"), diff=OVERALL-p;
+    note.className="note";
+    if(unk>0){
+      note.innerHTML="<div><b>"+diff+"</b> of your "+OVERALL+" solved aren't placed on a topic yet, across <b>"+unk+
+        "</b> topics. Type a count into any greyed row and this reconciles itself.</div>";
+    } else if(diff===0){
+      note.className="note ok";
+      note.innerHTML="<div>Every topic is accounted for. <b>"+p+"</b> placed, <b>"+OVERALL+"</b> on the dashboard &mdash; they match.</div>";
+    } else {
+      note.className="note bad";
+      note.innerHTML="<div>Topics add up to <b>"+p+"</b> but the dashboard says <b>"+OVERALL+
+        "</b>. A difference of <b>"+(diff>0?"+":"")+diff+"</b> means one of them is wrong &mdash; trust the dashboard.</div>";
+    }
+
+    Array.prototype.forEach.call(elLadder.querySelectorAll(".row"),function(row){
+      var n=+row.dataset.n, t=TOPICS[n-1], v=solved[n];
+      var bar=row.querySelector(".rbar"), inp=row.querySelector(".cnt");
+      bar.classList.toggle("unknown",v===null);
+      bar.querySelector("i").style.width=(v===null?0:Math.round(v/t.total*100))+"%";
+      if(document.activeElement!==inp) inp.value=(v===null?"":v);
+      row.classList.toggle("done",v!==null&&v>=t.total);
+      row.classList.toggle("current",!!cur&&cur.n===n);
+      row.querySelector(".tag").hidden=!(cur&&cur.n===n);
+      row.querySelector('[data-d="-1"]').disabled=(v===null||v<=0);
+      row.querySelector('[data-d="1"]').disabled=(v!==null&&v>=t.total);
+    });
+  }
+
+  function setVal(n,v){
+    var t=TOPICS[n-1];
+    solved[n]=(v===null)?null:Math.max(0,Math.min(t.total,v));
+    save(); render();
+  }
+
+  elLadder.addEventListener("click",function(e){
+    var b=e.target.closest(".stepper"); if(!b) return;
+    var n=+b.closest(".row").dataset.n, cur=solved[n];
+    setVal(n,(cur===null?0:cur)+(+b.dataset.d));
+    speak();
+  });
+  elLadder.addEventListener("input",function(e){
+    var i=e.target.closest(".cnt"); if(!i) return;
+    var n=+i.closest(".row").dataset.n, before=unknownCount();
+    setVal(n, i.value.trim()===""?null:parseInt(i.value,10)||0);
+    if(unknownCount()!==before) speak();
+  });
+
+  document.getElementById("buddyBtn").addEventListener("click",function(){
+    speak();
+    var m=document.getElementById("mouth");
+    m.setAttribute("d","M33 54 Q40 62 47 54"); setTimeout(function(){ m.setAttribute("d","M34 55 Q40 60 46 55"); },420);
+  });
+
+  document.getElementById("exportBtn").addEventListener("click",function(){
+    var lines=["| # | Topic | Solved | Total | Feel |","|---|---|---|---|---|"];
+    TOPICS.forEach(function(t){
+      var v=solved[t.n];
+      lines.push("| "+t.n+" | "+t.name+" | "+(v===null?"":v)+" | "+t.total+" | "+(v===null?"":(v>=t.total?"🟢":(v>0?"🟡":"⬜")))+" |");
+    });
+    lines.push("| | **Total** | **"+placed()+"** | **250** | |");
+    document.getElementById("dlgText").value=
+      "**Overall: "+OVERALL+" / 250**  ·  Easy 20/60 · Medium 49/155 · Hard 7/35\n"+
+      "**Streak:** "+STREAK.cur+" current · "+STREAK.best+" best\n\n"+lines.join("\n")+"\n";
+    document.getElementById("dlg").showModal();
+  });
+  document.getElementById("copyBtn").addEventListener("click",function(){
+    var ta=document.getElementById("dlgText"), btn=this;
+    function ok(){ btn.textContent="Copied"; setTimeout(function(){ btn.textContent="Copy"; },1600); }
+    try{
+      navigator.clipboard.writeText(ta.value).then(ok,function(){ ta.select(); ok(); });
+    }catch(e){ ta.select(); ok(); }
+  });
+  document.getElementById("resetBtn").addEventListener("click",function(){
+    try{ localStorage.removeItem(KEY); }catch(e){}
+    load(); buildLadder(); render(); spin=0; speak();
+  });
+  document.getElementById("themeBtn").addEventListener("click",function(){
+    var r=document.documentElement;
+    var now=r.getAttribute("data-theme");
+    var sysDark=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;
+    var isDark=now?now==="dark":sysDark;
+    r.setAttribute("data-theme",isDark?"light":"dark");
+  });
+
+  load(); buildLadder(); render(); speak();
+})();
+</script>
+</body>
+</html>

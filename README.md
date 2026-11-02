@@ -13,6 +13,7 @@ at the end of the Graphs section with 16 of 21 done.
 
 | File | What it is |
 |---|---|
+| [`index.html`](index.html) | The front door. Progress ring, the 18-topic ladder with editable counts, a reconciliation check, and Bit. Open it by double-clicking. |
 | [`PROGRESS.md`](PROGRESS.md) | The tracker. Counts per topic against the official NeetCode 250 denominators, the streak, and what the numbers actually mean. Single source of truth — no other file duplicates these. |
 | [`RESOURCES.md`](RESOURCES.md) | Researched, link-checked resources mapped to the topics still ahead, not a generic list. |
 | [`STRATEGY.md`](STRATEGY.md) | The NeetCode 250 topics in roadmap order, current counts, and the daily rule I actually keep (one problem a day — an easy one still counts). |
@@ -41,6 +42,7 @@ stuff) and [Finish the 150](finish-150.html) (the graphs/DP back half).
 ## Layout
 
 ```
+index.html               the dashboard — progress at a glance, counts you can edit
 PROGRESS.md              the tracker — counts, streak, what they mean (source of truth)
 RESOURCES.md             researched resources, mapped to the topics still ahead
 CLAUDE.md                the teaching contract — how Claude is meant to coach, not solve
