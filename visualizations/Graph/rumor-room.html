@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Rumor Room — Rotting Oranges as a story (LC 994)</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2431; --panel3:#222c3a;
+    --border:#2d3644; --text:#e6edf3; --dim:#8b95a5;
+    --accent:#7c9cff; --recurse:#58a6ff; --gold:#e3b341;
+    --inc:#3fb950; --prune:#f85149; --success:#2ea043;
+    --fresh:#f0883e; --rot:#6e4b2a; --rotline:#b9791f; --empty:#1b2029;
+    --mono:'SF Mono',ui-monospace,Menlo,Consolas,monospace;
+    --sans:'Segoe UI',system-ui,-apple-system,sans-serif;
+    /* story-mode roles */
+    --knows:#ff8a4c; --knows2:#ffb27a; --knowsbg:#3a2210;
+    --unaware:#58a6ff; --unaware2:#9cd0ff; --unawarebg:#12263d;
+    --chair:#38424f;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.5;padding:0 0 50px}
+  a{color:var(--recurse)}
+  .wrap{max-width:1180px;margin:0 auto;padding:16px}
+
+  /* ---------- header ---------- */
+  header.hdr{display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap}
+  header.hdr h1{font-size:23px;margin:0 0 2px;letter-spacing:.3px}
+  header.hdr h1 span{color:var(--knows)}
+  .sub{color:var(--dim);font-size:13px;margin:0 0 12px;max-width:820px}
+  .navlink{margin-left:auto;font-size:12.5px;background:var(--panel);border:1px solid var(--border);
+    border-radius:20px;padding:6px 13px;text-decoration:none;white-space:nowrap}
+  .navlink:hover{border-color:var(--accent)}
+  code{background:var(--panel3);padding:1px 5px;border-radius:5px;font-family:var(--mono);font-size:12.5px}
+
+  /* ---------- HUD ---------- */
+  .hud{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);
+    border:1px solid var(--border);border-radius:12px;padding:10px 13px;margin-bottom:12px}
+  .hstat{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:7px 14px;min-width:120px}
+  .hstat .k{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim)}
+  .hstat .v{font-family:var(--mono);font-size:26px;font-weight:700;line-height:1.15}
+  .hstat.minute .v{color:var(--gold)}
+  .hstat.fresh .v{color:var(--unaware)}
+  .hstat .v.bump{animation:bump .45s ease-out}
+  @keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1)}}
+  .whistle{opacity:0;transform:scale(.6);transition:opacity .18s,transform .18s;
+    background:rgba(227,179,65,.14);border:1px solid var(--gold);color:var(--gold);
+    border-radius:20px;padding:7px 16px;font-weight:700;font-size:15px;white-space:nowrap}
+  .whistle.on{opacity:1;transform:scale(1);animation:whistlepulse .7s ease-out}
+  @keyframes whistlepulse{0%{box-shadow:0 0 0 0 rgba(227,179,65,.55)}100%{box-shadow:0 0 0 22px rgba(227,179,65,0)}}
+  .phase{margin-left:auto;font-size:13px;color:var(--dim);max-width:460px;text-align:right}
+  .phase b{color:var(--text)}
+
+  /* ---------- stage / room ---------- */
+  .stage{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:14px;
+    padding:18px;margin-bottom:12px;min-height:260px;
+    background-image:radial-gradient(circle at 50% 0%,rgba(124,156,255,.07),transparent 60%)}
+  .stage.dimmed .cell{filter:brightness(.32) saturate(.4)}
+  .stage.dimmed .cell.spot{filter:none;animation:spotpulse 1.6s ease-in-out infinite}
+  @keyframes spotpulse{0%,100%{box-shadow:0 0 0 3px rgba(88,166,255,.35)}50%{box-shadow:0 0 0 12px rgba(88,166,255,.06)}}
+  .room{position:relative;display:flex;justify-content:center}
+  .cells{display:grid;gap:10px;position:relative}
+  .fx{position:absolute;inset:0;pointer-events:none;overflow:visible}
+
+  .cell{width:74px;height:74px;border-radius:12px;position:relative;
+    background:var(--empty);border:2px solid var(--border);
+    display:flex;align-items:flex-end;justify-content:center;
+    transition:background .25s,border-color .25s,filter .4s,transform .2s}
+  .cell .chair{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);
+    width:40px;height:26px;border:2px solid var(--chair);border-top:none;border-radius:0 0 8px 8px;opacity:.9}
+  .cell .chair:before{content:'';position:absolute;left:-2px;right:-2px;top:-13px;height:13px;
+    border:2px solid var(--chair);border-bottom:none;border-radius:7px 7px 0 0}
+  .cell .person{position:relative;width:44px;height:48px;margin-bottom:6px;opacity:0;
+    transition:opacity .25s,transform .3s}
+  .cell .person .head{transition:fill .35s}
+  .cell .person .body{transition:fill .35s}
+  .cell .rc{position:absolute;top:3px;left:5px;font-size:9px;color:var(--dim);
+    font-family:var(--mono);opacity:0;transition:opacity .15s}
+  .cell:hover .rc{opacity:1}
+
+  .cell[data-v="0"] .person{opacity:0}
+  .cell[data-v="1"]{background:var(--unawarebg);border-color:rgba(88,166,255,.45)}
+  .cell[data-v="1"] .person{opacity:1}
+  .cell[data-v="1"] .head{fill:var(--unaware2)}
+  .cell[data-v="1"] .body{fill:var(--unaware)}
+  .cell[data-v="2"]{background:var(--knowsbg);border-color:rgba(255,138,76,.55)}
+  .cell[data-v="2"] .person{opacity:1}
+  .cell[data-v="2"] .head{fill:var(--knows2)}
+  .cell[data-v="2"] .body{fill:var(--knows)}
+  .cell[data-v="2"] .person{animation:chatter 2.2s ease-in-out infinite}
+  @keyframes chatter{0%,100%{transform:rotate(0deg)}25%{transform:rotate(-2.5deg)}75%{transform:rotate(2.5deg)}}
+
+  .cell.scan{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,156,255,.25)}
+  .cell.telling{border-color:var(--gold);box-shadow:0 0 0 4px rgba(227,179,65,.30);transform:translateY(-3px) scale(1.05);z-index:3}
+  .cell.standing .person{transform:translateY(-6px)}
+  .cell.shock{animation:shock .5s ease-out}
+  @keyframes shock{0%{transform:scale(1)}25%{transform:scale(1.2);box-shadow:0 0 0 0 rgba(255,255,255,.8)}
+                   100%{transform:scale(1);box-shadow:0 0 0 16px rgba(255,138,76,0)}}
+  .cell .gasp{position:absolute;top:-6px;right:-4px;font-size:17px;opacity:0;transform:scale(.4);
+    transition:opacity .18s,transform .18s;pointer-events:none}
+  .cell.shock .gasp{opacity:1;transform:scale(1)}
+
+  /* ---------- speech bubbles ---------- */
+  .bub{position:absolute;left:0;top:0;transform:translate(-50%,-50%);
+    background:#fff;color:#16202c;border-radius:12px;padding:3px 9px;font-size:11.5px;font-weight:700;
+    white-space:nowrap;box-shadow:0 3px 12px rgba(0,0,0,.45);z-index:6;
+    transition-property:transform,opacity;transition-timing-function:cubic-bezier(.3,.7,.4,1);opacity:1}
+  .bub:after{content:'';position:absolute;left:50%;bottom:-5px;margin-left:-5px;
+    border:5px solid transparent;border-top-color:#fff;border-bottom:none}
+  .bub.k-wall{background:#ffd3d0;color:#7d1a15}
+  .bub.k-wall:after{border-top-color:#ffd3d0}
+  .bub.k-empty{background:#cfd6e0;color:#3b4657}
+  .bub.k-empty:after{border-top-color:#cfd6e0}
+  .bub.k-knows{background:#ffe6b8;color:#6b4a06}
+  .bub.k-knows:after{border-top-color:#ffe6b8}
+  .bub.k-land{background:#ffb27a;color:#3a1c05}
+  .bub.k-land:after{border-top-color:#ffb27a}
+  .bub.pop{animation:bpop .34s ease-out forwards}
+  @keyframes bpop{0%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1.9) rotate(9deg)}}
+  .bub.fade{opacity:0;transition-duration:.34s}
+  .bub.shrug{animation:bshrug .42s ease-out forwards}
+  @keyframes bshrug{0%{opacity:1}45%{opacity:1}100%{opacity:0}}
+  .bub.land{animation:bland .32s ease-out forwards}
+  @keyframes bland{0%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(.35)}}
+
+  /* ---------- overlay play ---------- */
+  .ovl{position:absolute;inset:0;background:rgba(13,17,23,.72);backdrop-filter:blur(2px);
+    border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:20}
+  .ovl.hide{display:none}
+  .ovl button{width:88px;height:88px;border-radius:50%;border:2px solid var(--knows);
+    background:rgba(255,138,76,.16);color:var(--knows);font-size:34px;cursor:pointer;
+    transition:transform .18s,background .18s}
+  .ovl button:hover{transform:scale(1.08);background:rgba(255,138,76,.3)}
+  .ovl p{margin:0;color:var(--dim);font-size:13px}
+
+  /* ---------- the line ---------- */
+  .linewrap{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:11px 13px;margin-bottom:12px}
+  .linehead{display:flex;justify-content:space-between;align-items:center;font-size:11px;
+    text-transform:uppercase;letter-spacing:.7px;color:var(--dim);font-weight:700;margin-bottom:8px}
+  .linehead .lg{text-transform:none;letter-spacing:0;font-weight:400}
+  .line{display:flex;gap:7px;align-items:flex-end;flex-wrap:wrap;min-height:66px}
+  .chip{background:var(--panel2);border:1px solid var(--border);border-radius:10px;
+    padding:5px 8px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;
+    font-family:var(--mono);font-size:10.5px;color:var(--dim);transition:border-color .2s,box-shadow .2s}
+  .chip svg{width:24px;height:27px}
+  .chip .head{fill:var(--knows2)}.chip .body{fill:var(--knows)}
+  .chip.this{border-color:var(--gold);color:var(--gold);box-shadow:0 0 0 2px rgba(227,179,65,.18)}
+  .chip.next{border-color:var(--recurse);color:var(--recurse)}
+  .chip.talking{border-color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.25);transform:translateY(-4px)}
+  .chip.enter{animation:chipin .4s cubic-bezier(.2,.9,.3,1.2)}
+  @keyframes chipin{0%{opacity:0;transform:translateX(34px) scale(.7)}100%{opacity:1;transform:none}}
+  .chip.leftover{animation:leftglow 1.4s ease-in-out infinite}
+  @keyframes leftglow{0%,100%{box-shadow:0 0 0 2px rgba(227,179,65,.25)}50%{box-shadow:0 0 0 9px rgba(227,179,65,0)}}
+  .lndiv{align-self:stretch;border-left:2px dashed var(--dim);margin:0 3px;padding-left:8px;
+    font-family:var(--mono);font-size:10px;color:var(--dim);display:flex;align-items:center}
+  .lnempty{color:var(--dim);font-family:var(--mono);font-size:12px}
+
+  /* ---------- banner ---------- */
+  .banner{display:none;border-radius:12px;padding:14px 16px;margin-bottom:12px;font-size:14px;position:relative;overflow:hidden}
+  .banner.show{display:block;animation:bannerin .45s ease-out}
+  @keyframes bannerin{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:none}}
+  .banner.ok{background:rgba(46,160,67,.10);border:1px solid var(--success);color:#c6ecd0}
+  .banner.bad{background:rgba(248,81,73,.10);border:1px solid var(--prune);color:#ffc7c2}
+  .banner.zero{background:rgba(124,156,255,.10);border:1px solid var(--accent);color:#cdd6e0}
+  .banner .big{display:block;font-family:var(--mono);font-size:24px;font-weight:700;margin-bottom:4px}
+  .banner.ok .big{color:var(--inc)}
+  .banner.bad .big{color:var(--prune)}
+  .banner.zero .big{color:var(--accent)}
+  .banner .callout{margin-top:9px;background:rgba(227,179,65,.10);border:1px solid var(--gold);
+    border-radius:9px;padding:9px 11px;color:#f0e2be;font-size:13px}
+  .banner .callout b{color:var(--gold)}
+  .confetti{position:fixed;inset:0;pointer-events:none;z-index:50;overflow:hidden}
+  .confetti i{position:absolute;top:0;width:8px;height:13px;border-radius:2px;animation:fall linear forwards}
+  @keyframes fall{0%{transform:translateY(-10vh) rotate(0deg);opacity:1}
+                  100%{transform:translateY(105vh) rotate(720deg);opacity:.15}}
+
+  /* ---------- controls ---------- */
+  .controls{display:flex;gap:9px;align-items:center;flex-wrap:wrap;background:var(--panel);
+    border:1px solid var(--border);border-radius:12px;padding:10px 13px;margin-bottom:14px}
+  .btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:8px 15px;
+    border-radius:9px;cursor:pointer;font-size:13.5px;font-weight:700;font-family:var(--sans)}
+  .btn:hover{border-color:var(--accent)}
+  .btn.primary{background:var(--knows);color:#20120a;border-color:var(--knows)}
+  .ctl-sep{width:1px;height:22px;background:var(--border)}
+  .fld{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--dim)}
+  select{background:var(--panel2);border:1px solid var(--border);color:var(--text);
+    padding:7px 9px;border-radius:8px;font-size:13px;font-family:var(--sans)}
+  input[type=range]{accent-color:var(--knows);width:140px}
+  .spd{font-family:var(--mono);color:var(--text);min-width:34px}
+  .btn:disabled{opacity:.35;cursor:not-allowed}
+  .beatc{font-family:var(--mono);font-size:12px;color:var(--dim);min-width:92px}
+  .kbdhint{font-size:11.5px;color:var(--dim);margin:-6px 0 14px}
+  .kbdhint kbd{background:var(--panel3);border:1px solid var(--border);border-radius:4px;
+    padding:1px 5px;font-family:var(--mono);font-size:11px}
+
+  /* ---------- metaphor key ---------- */
+  .key{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:13px 15px;font-size:13.5px}
+  .key h3{margin:0 0 8px;font-size:11.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--dim);font-weight:700}
+  .keygrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:9px}
+  .keyrow{background:var(--panel2);border:1px solid var(--border);border-radius:9px;padding:9px 11px;color:#cdd6e0}
+  .keyrow b{color:var(--gold)}
+  .key p{margin:10px 0 0;color:#cdd6e0}
+  .key .mini{color:var(--dim);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hdr">
+  <div>
+    <h1>The Rumor Room <span>— Rotting Oranges, told as a story</span></h1>
+    <p class="sub">LeetCode 994, with the code taken out. A room full of people. Some already know the rumor, the rest have not heard it yet. Every minute a whistle blows and everyone in the line whispers to the four people beside them. The question is only ever: <b>how many whistles until nobody is left out?</b></p>
+  </div>
+  <a class="navlink" href="rotting-oranges.html">see the code version →</a>
+</header>
+
+<div class="hud">
+  <div class="hstat minute"><span class="k">Minute</span><span class="v" id="hud-min">0</span></div>
+  <div class="hstat fresh"><span class="k">Haven't heard yet</span><span class="v" id="hud-fresh">0</span></div>
+  <div class="whistle" id="whistle">🔔 Minute 1!</div>
+  <div class="phase" id="phase">Press play to open the room.</div>
+</div>
+
+<div class="stage" id="stage">
+  <div class="room" id="room">
+    <div class="cells" id="cells"></div>
+    <div class="fx" id="fx"></div>
+  </div>
+  <div class="ovl" id="ovl">
+    <button id="bigplay" title="Play">▶</button>
+    <p>Minute 0 — the room is seated. Press play.</p>
+  </div>
+</div>
+
+<div class="linewrap">
+  <div class="linehead">
+    <span>The line — front is leftmost, they talk first</span>
+    <span class="lg" id="linelegend"></span>
+  </div>
+  <div class="line" id="line"><span class="lnempty">nobody in line yet</span></div>
+</div>
+
+<div class="banner" id="banner"></div>
+
+<div class="controls">
+  <button class="btn" id="prevbtn" title="one beat back">◀ Prev</button>
+  <button class="btn primary" id="playbtn">▶ Play the story</button>
+  <button class="btn" id="nextbtn" title="one beat forward">Next ▶</button>
+  <span class="beatc" id="beatc">beat 0 / 0</span>
+  <span class="ctl-sep"></span>
+  <label class="fld">Speed
+    <input type="range" id="speed" min="0.5" max="3" step="0.1" value="1">
+    <span class="spd" id="speedv">1.0×</span>
+  </label>
+  <span class="ctl-sep"></span>
+  <label class="fld">Scenario
+    <select id="preset"></select>
+  </label>
+</div>
+<p class="kbdhint"><kbd>←</kbd> <kbd>→</kbd> step one beat (a whistle, one person's turn, or a minute ending) ·
+  <kbd>space</kbd> play / pause. Stepping pauses the story; press play to carry on from wherever you stopped.</p>
+
+<div class="key">
+  <h3>The whole algorithm, in room language</h3>
+  <div class="keygrid">
+    <div class="keyrow"><b>2 = a person who knows.</b> Orange, fidgety, ready to talk.</div>
+    <div class="keyrow"><b>1 = a person who hasn't heard.</b> Blue, sitting quietly. This is what the counter tracks.</div>
+    <div class="keyrow"><b>0 = an empty chair.</b> Nobody to tell. Whispers die there.</div>
+    <div class="keyrow"><b>The queue = the line.</b> Everyone who knows stands in it, in the order they learned.</div>
+    <div class="keyrow"><b>One whistle = one BFS level.</b> The line is frozen at the whistle: only the people already standing there talk this minute.</div>
+    <div class="keyrow"><b>Nobody is told twice.</b> The moment you hear it you turn orange, so a second whisper just bounces off you.</div>
+  </div>
+  <p>Why the whistle is frozen: if new people could talk the instant they heard it, minute 1 and minute 2 would smear together and the minute count would mean nothing. Freezing the line at the whistle — <code>for _ in range(len(q))</code> — is the clock.</p>
+  <p class="mini">Two ways this ends. Everyone has heard it → stop whistling immediately, even if people are still standing in line, because they have nobody left to tell. Or the line empties while someone is still blue → they are walled off by empty chairs and can never hear it → <code>-1</code>.</p>
+</div>
+
+</div>
+
+<script id="engine">
+/* ===== ENGINE-START =====
+   Pure algorithm layer. Mirrors the Python line-for-line. No DOM access in here.
+   Extracted verbatim by the Node verification script. */
+
+var DIRS = [[1,0],[0,1],[-1,0],[0,-1]];
+
+var PRESETS = [
+  {id:'classic',     name:'Classic spread → 4',        grid:[[2,1,1],[1,1,0],[0,1,1]]},
+  {id:'unreachable', name:'Walled-off orange → -1',    grid:[[2,1,1],[0,1,1],[1,0,1]]},
+  {id:'nofresh',     name:'No fresh oranges → 0',      grid:[[0,2]]},
+  {id:'single',      name:'Single source, one line → 4', grid:[[2,1,1,1,1]]}
+];
+
+/* Line numbers refer to the rendered listing (1 = "from collections import deque"). */
+function simulate(grid0){
+  var rows = grid0.length;
+  var cols = grid0[0].length;
+  var grid = grid0.map(function(row){ return row.slice(); });
+  var events = [];
+  var q = [];
+  var fresh = 0, level = 0, pops = null; // pops = null means "not inside a ring yet"
+  function E(e){ events.push(e); return e; }
+
+  E({t:'setup', line:4, msg:'rows = len(grid) = ' + rows});
+  E({t:'setup', line:5, msg:'cols = len(grid[0]) = ' + cols});
+  E({t:'setup', line:6, msg:'q = deque() — empty queue, about to be seeded with EVERY rotten cell'});
+  E({t:'setup', line:7, msg:'fresh = 0 — the countdown of oranges still to save'});
+
+  // for r in range(rows): for c in range(cols):  -> row-major scan
+  for(var r=0; r<rows; r++){
+    for(var c=0; c<cols; c++){
+      E({t:'init-scan', line:10, lines:[8,9,10], r:r, c:c,
+         msg:'Scan (' + r + ',' + c + ') → value ' + grid[r][c]});
+      if(grid[r][c] === 2){
+        E({t:'seed', line:11, r:r, c:c, qPush:[r,c],
+           msg:'(' + r + ',' + c + ') is already rotten → seed it into q. Multi-source BFS: all sources go in before the loop.'});
+        q.push([r,c]);
+      } else if(grid[r][c] === 1){
+        E({t:'count-fresh', line:13, lines:[12,13], r:r, c:c, freshDelta:1,
+           msg:'(' + r + ',' + c + ') is fresh → fresh becomes ' + (fresh+1)});
+        fresh++;
+      }
+    }
+  }
+
+  E({t:'check-fresh0', line:15,
+     msg:'fresh == 0 ? ' + (fresh === 0 ? 'yes — nothing to rot, answer is 0 minutes' : 'no (fresh = ' + fresh + ') — keep going')});
+  if(fresh === 0){
+    E({t:'early-return-0', line:16, result:0,
+       msg:'return 0 — zero minutes needed. This guard also stops an empty-queue grid from wrongly returning -1.'});
+    return {events:events, result:0, rows:rows, cols:cols, grid0:grid0};
+  }
+
+  E({t:'setup', line:27, msg:'level = 0 — the minute counter'});
+
+  while(true){
+    var enter = (q.length > 0 && fresh > 0);
+    var freshExit = (q.length > 0 && fresh === 0);
+    E({t:'loop-check', line:28, exit:!enter, freshExit:freshExit,
+       msg:'while q and fresh>0 → len(q) = ' + q.length + ', fresh = ' + fresh + ' → ' +
+           (enter ? 'enter another minute' :
+            (freshExit ? 'STOP — fresh hit 0 while q still holds ' + q.length + ' cell(s); popping them would be wasted work'
+                       : 'STOP — queue is empty and ' + fresh + ' fresh orange(s) can never be reached'))});
+    if(!enter) break;
+
+    var n = q.length;
+    E({t:'ring-start', line:29, popsSet:[pops, n],
+       msg:'for _ in range(len(q)) → len(q) frozen at ' + n + '. Exactly these ' + n + ' cell(s) are minute ' + level + '’s ring; anything they push belongs to minute ' + (level+1) + '.'});
+    pops = n;
+
+    for(var i=0; i<n; i++){
+      var cell = q[0];
+      var cr = cell[0], cc = cell[1];
+      E({t:'pop', line:30, r:cr, c:cc, qPop:[cr,cc], popsSet:[pops, pops-1],
+         msg:'popleft() → (' + cr + ',' + cc + '). ' + (pops-1) + ' pop(s) left in this ring.'});
+      q.shift();
+      pops--;
+
+      for(var d=0; d<DIRS.length; d++){
+        var dr = DIRS[d][0], dc = DIRS[d][1];
+        var nr = cr + dr, nc = cc + dc;
+        E({t:'call', line:32, lines:[31,32], r:cr, c:cc, nr:nr, nc:nc, dr:dr, dc:dc,
+           msg:'addfruit(' + nr + ',' + nc + ')  —  neighbour (' + dr + ',' + dc + ') of (' + cr + ',' + cc + ')'});
+
+        if(Math.min(nr,nc) < 0 || nr >= rows || nc >= cols){
+          E({t:'guard-oob', line:21, lines:[20,21], r:cr, c:cc, nr:nr, nc:nc,
+             msg:'(' + nr + ',' + nc + ') falls off the board → bounds guard returns, nothing changes.'});
+          continue;
+        }
+        if(grid[nr][nc] !== 1){
+          E({t:'guard-notfresh', line:23, lines:[22,23], r:cr, c:cc, nr:nr, nc:nc, val:grid[nr][nc],
+             msg:'(' + nr + ',' + nc + ') holds ' + grid[nr][nc] + ', not a fresh 1 → returns. This is also the visited check: already-rotten cells are 2, so they can never be re-queued.'});
+          continue;
+        }
+        E({t:'rot', line:26, lines:[24,25,26], r:cr, c:cc, nr:nr, nc:nc,
+           gridSet:[nr,nc,1,2], qPush:[nr,nc], freshDelta:-1,
+           msg:'(' + nr + ',' + nc + ') rots: grid → 2, appended to q for minute ' + (level+1) + ', fresh drops to ' + (fresh-1) + '.'});
+        grid[nr][nc] = 2;
+        q.push([nr,nc]);
+        fresh--;
+      }
+    }
+
+    E({t:'level-inc', line:33, levelDelta:1,
+       msg:'Ring drained → level becomes ' + (level+1) + '. One whole minute of spreading is done.'});
+    level++;
+  }
+
+  var res = (fresh === 0) ? level : -1;
+  E({t:'verdict', line:34, result:res,
+     msg:'return level if fresh==0 else -1 → fresh = ' + fresh + ' so the answer is ' + res +
+         (res === -1 ? ' (some orange is unreachable)' : ' minute(s)')});
+  return {events:events, result:res, rows:rows, cols:cols, grid0:grid0};
+}
+
+/* ---- replayer state: forward + backward over the event log ---- */
+function initState(grid0){
+  return {
+    grid: grid0.map(function(row){ return row.slice(); }),
+    q: [], fresh: 0, level: 0, pops: null, result: null
+  };
+}
+function applyEvent(st, e){
+  if(e.gridSet) st.grid[e.gridSet[0]][e.gridSet[1]] = e.gridSet[3];
+  if(e.qPop)  st.q.shift();
+  if(e.qPush) st.q.push(e.qPush.slice());
+  if(e.freshDelta) st.fresh += e.freshDelta;
+  if(e.levelDelta) st.level += e.levelDelta;
+  if(e.popsSet) st.pops = e.popsSet[1];
+  if(e.result !== undefined) st.result = e.result;
+}
+function undoEvent(st, e){
+  if(e.result !== undefined) st.result = null;
+  if(e.popsSet) st.pops = e.popsSet[0];
+  if(e.levelDelta) st.level -= e.levelDelta;
+  if(e.freshDelta) st.fresh -= e.freshDelta;
+  if(e.qPush) st.q.pop();
+  if(e.qPop)  st.q.unshift(e.qPop.slice());
+  if(e.gridSet) st.grid[e.gridSet[0]][e.gridSet[1]] = e.gridSet[2];
+}
+
+if(typeof module !== 'undefined' && module.exports){
+  module.exports = {simulate:simulate, initState:initState, applyEvent:applyEvent,
+                    undoEvent:undoEvent, PRESETS:PRESETS, DIRS:DIRS};
+}
+/* ===== ENGINE-END ===== */
+</script>
+
+<script id="waves">
+/* ===== WAVES-START =====
+   Wave grouper. Consumes the engine's event log and folds it into the structure the
+   animation replays: intro, one wave per whistle, and one ending. Adds no algorithm of
+   its own — every field either points at a real event object or is queue state produced
+   by replaying those events through the engine's own applyEvent. No DOM access in here. */
+
+function groupWaves(sim, api){
+  api = api || {
+    initState: (typeof initState !== 'undefined') ? initState : null,
+    applyEvent: (typeof applyEvent !== 'undefined') ? applyEvent : null
+  };
+  var evs = sim.events;
+
+  // replayed queue snapshot BEFORE event i (index-aligned with evs)
+  var st = api.initState(sim.grid0);
+  var qBefore = [];
+  for(var i=0;i<evs.length;i++){
+    qBefore.push(st.q.map(function(p){ return p.slice(); }));
+    api.applyEvent(st, evs[i]);
+  }
+
+  var out = {
+    rows: sim.rows, cols: sim.cols, grid0: sim.grid0, result: sim.result,
+    intro: {events: [], seeds: [], freshTotal: 0},
+    waves: [],
+    ending: null
+  };
+
+  var wave = null, teller = null;
+
+  function closeTeller(){ teller = null; }
+  function closeWave(ev){
+    if(!wave) return;
+    wave.levelIncEvent = ev || null;
+    out.waves.push(wave);
+    wave = null; teller = null;
+  }
+
+  for(var k=0;k<evs.length;k++){
+    var e = evs[k];
+    switch(e.t){
+      case 'setup':
+      case 'init-scan':
+      case 'check-fresh0':
+        out.intro.events.push(e);
+        break;
+      case 'seed':
+        out.intro.events.push(e);
+        out.intro.seeds.push([e.r, e.c]);
+        break;
+      case 'count-fresh':
+        out.intro.events.push(e);
+        out.intro.freshTotal += 1;
+        break;
+      case 'early-return-0':
+        out.ending = {kind:'early0', event:e, verdictEvent:e, result:e.result, leftover:[]};
+        break;
+      case 'loop-check':
+        if(e.exit){
+          out.ending = {
+            kind: e.freshExit ? 'freshExit' : 'exit',
+            event: e, verdictEvent: null, result: null,
+            leftover: qBefore[k].map(function(p){ return p.slice(); })
+          };
+        } else {
+          wave = {minute: out.waves.length + 1, level: out.waves.length,
+                  loopCheckEvent: e, ringStartEvent: null, ring: [],
+                  tellers: [], rots: [], levelIncEvent: null,
+                  queueAtWhistle: qBefore[k].map(function(p){ return p.slice(); })};
+        }
+        break;
+      case 'ring-start':
+        if(wave){
+          wave.ringStartEvent = e;
+          wave.ring = qBefore[k].slice(0, e.popsSet[1]).map(function(p){ return p.slice(); });
+        }
+        break;
+      case 'pop':
+        if(wave){
+          teller = {popEvent:e, cell:[e.r, e.c], probes:[]};
+          wave.tellers.push(teller);
+        }
+        break;
+      case 'call':
+        if(teller) teller.probes.push({callEvent:e, from:[e.r,e.c], to:[e.nr,e.nc],
+                                       kind:null, val:null, outcomeEvent:null});
+        break;
+      case 'guard-oob':
+        if(teller && teller.probes.length){
+          var pa = teller.probes[teller.probes.length-1];
+          pa.kind = 'wall'; pa.outcomeEvent = e;
+        }
+        break;
+      case 'guard-notfresh':
+        if(teller && teller.probes.length){
+          var pb = teller.probes[teller.probes.length-1];
+          pb.kind = (e.val === 0) ? 'empty' : 'knows'; pb.val = e.val; pb.outcomeEvent = e;
+        }
+        break;
+      case 'rot':
+        if(teller && teller.probes.length){
+          var pc = teller.probes[teller.probes.length-1];
+          pc.kind = 'land'; pc.outcomeEvent = e;
+        }
+        if(wave) wave.rots.push(e);
+        break;
+      case 'level-inc':
+        closeWave(e);
+        break;
+      case 'verdict':
+        if(!out.ending) out.ending = {kind:'exit', event:e, verdictEvent:e, result:e.result, leftover:[]};
+        out.ending.verdictEvent = e;
+        out.ending.result = e.result;
+        break;
+    }
+  }
+  closeWave(null);
+  closeTeller();
+  return out;
+}
+
+/* ---- beats: the scrub granularity for arrow-key stepping ----
+   A beat is a cut point in the SAME event log. beat.end is an exclusive index into
+   sim.events: the state at a beat is exactly initState(grid0) with events[0 .. end)
+   applied. beat 0 applies nothing. Nothing here re-derives algorithm state. */
+function buildBeats(sim, plan){
+  var idx = new Map();
+  for(var i=0;i<sim.events.length;i++) idx.set(sim.events[i], i);
+  function after(ev){ return idx.get(ev) + 1; }
+
+  var beats = [{kind:'start', end:0, label:'Minute 0 — the room is seated.'}];
+
+  if(plan.intro.events.length){
+    beats.push({kind:'intro', end: after(plan.intro.events[plan.intro.events.length-1]),
+                label:'Everyone who knows is standing in the line.'});
+  }
+
+  plan.waves.forEach(function(w){
+    beats.push({kind:'whistle', end: after(w.ringStartEvent), wave:w,
+                label:'Whistle ' + w.minute + ' — the line is frozen at ' + w.ring.length + '.'});
+    w.tellers.forEach(function(t){
+      var last = t.probes.length ? t.probes[t.probes.length-1].outcomeEvent : t.popEvent;
+      beats.push({kind:'teller', end: after(last), wave:w, teller:t,
+                  label:'(' + t.cell[0] + ',' + t.cell[1] + ') told all four neighbours.'});
+    });
+    beats.push({kind:'waveend', end: after(w.levelIncEvent), wave:w,
+                label:'Minute ' + w.minute + ' is done.'});
+  });
+
+  beats.push({kind:'ending', end: sim.events.length, label:'The room is finished.'});
+  return beats;
+}
+
+if(typeof module !== 'undefined' && module.exports){
+  module.exports = {groupWaves: groupWaves, buildBeats: buildBeats};
+}
+/* ===== WAVES-END ===== */
+</script>
+
+<script id="storynames">
+/* scenario labels in room language — pure presentation, keyed by PRESETS ids */
+var STORY_NAMES = {
+  classic:     'Crowded room → 4 minutes',
+  unreachable: 'Someone sits alone → -1',
+  nofresh:     'Everyone already knows → 0',
+  single:      'One long row of chairs → 4 minutes'
+};
+</script>
+
+<script id="story">
+/* ---------------- animation layer: a director over the grouped event log ----------------
+   Every number, colour, line position and ending shown here is applied through the engine's
+   applyEvent on the engine's own events. Timing is the only thing invented locally. */
+
+var CANCEL = {cancelled:true};
+
+var app = {
+  grid: PRESETS[0].grid.map(function(r){ return r.slice(); }),
+  sim: null, plan: null, beats: [], beat: 0, st: null,
+  gen: 0, playing: false, live: false, speed: 1, started: false, finished: false
+};
+
+var els = {
+  cells: document.getElementById('cells'), fx: document.getElementById('fx'),
+  stage: document.getElementById('stage'), ovl: document.getElementById('ovl'),
+  bigplay: document.getElementById('bigplay'), playbtn: document.getElementById('playbtn'),
+  prevbtn: document.getElementById('prevbtn'), nextbtn: document.getElementById('nextbtn'),
+  beatc: document.getElementById('beatc'),
+  speed: document.getElementById('speed'), speedv: document.getElementById('speedv'),
+  preset: document.getElementById('preset'), line: document.getElementById('line'),
+  linelegend: document.getElementById('linelegend'), banner: document.getElementById('banner'),
+  hudMin: document.getElementById('hud-min'), hudFresh: document.getElementById('hud-fresh'),
+  whistle: document.getElementById('whistle'), phase: document.getElementById('phase')
+};
+
+PRESETS.forEach(function(p,i){
+  var o = document.createElement('option');
+  o.value = i; o.textContent = STORY_NAMES[p.id] || p.name;
+  els.preset.appendChild(o);
+});
+
+/* ---------- timing ---------- */
+var TICK = 40;
+function wait(ms){
+  return new Promise(function(resolve, reject){
+    var g = app.gen, left = ms;
+    var iv = setInterval(function(){
+      if(app.gen !== g){ clearInterval(iv); reject(CANCEL); return; }
+      if(!app.playing) return;
+      left -= TICK * app.speed;
+      if(left <= 0){ clearInterval(iv); resolve(); }
+    }, TICK);
+  });
+}
+function dur(ms){ return Math.max(60, Math.round(ms / app.speed)); }
+
+/* ---------- geometry (fixed cell metrics, so off-grid targets are computable) ---------- */
+var CELL = 74, GAP = 10, STEP = CELL + GAP;
+function center(r, c){
+  return {x: els.cells.offsetLeft + c*STEP + CELL/2,
+          y: els.cells.offsetTop  + r*STEP + CELL/2};
+}
+
+/* ---------- room ---------- */
+var cellEls = [];
+function personSVG(){
+  return '<svg class="person" viewBox="0 0 44 48"><circle class="head" cx="22" cy="13" r="9"/>' +
+         '<path class="body" d="M6 48c0-10 7.2-16 16-16s16 6 16 16z"/></svg>';
+}
+function buildRoom(){
+  var rows = app.grid.length, cols = app.grid[0].length;
+  els.cells.style.gridTemplateColumns = 'repeat(' + cols + ',' + CELL + 'px)';
+  var html = '';
+  for(var r=0;r<rows;r++){
+    for(var c=0;c<cols;c++){
+      html += '<div class="cell" data-v="0" data-r="'+r+'" data-c="'+c+'">' +
+              '<span class="rc">'+r+','+c+'</span><span class="chair"></span>' +
+              personSVG() + '<span class="gasp">😮</span></div>';
+    }
+  }
+  els.cells.innerHTML = html;
+  cellEls = [];
+  var list = els.cells.querySelectorAll('.cell');
+  for(var i=0;i<rows;i++){
+    cellEls.push([]);
+    for(var j=0;j<cols;j++) cellEls[i].push(list[i*cols + j]);
+  }
+  els.fx.innerHTML = '';
+}
+function cellAt(r,c){
+  if(r<0||c<0||r>=cellEls.length||c>=cellEls[0].length) return null;
+  return cellEls[r][c];
+}
+function paintRoom(){
+  var standing = {};
+  app.st.q.forEach(function(p){ standing[p[0] + ',' + p[1]] = true; });
+  for(var r=0;r<app.st.grid.length;r++)
+    for(var c=0;c<app.st.grid[0].length;c++){
+      var el = cellEls[r][c];
+      el.setAttribute('data-v', app.st.grid[r][c]);
+      el.classList.toggle('standing', !!standing[r + ',' + c]);
+    }
+}
+
+/* ---------- HUD ---------- */
+function bump(el){ el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
+function paintHUD(opts){
+  opts = opts || {};
+  if(els.hudMin.textContent !== String(app.st.level)){
+    els.hudMin.textContent = app.st.level; bump(els.hudMin);
+  }
+  if(els.hudFresh.textContent !== String(app.st.fresh)){
+    els.hudFresh.textContent = app.st.fresh;
+    if(opts.bumpFresh !== false) bump(els.hudFresh);
+  }
+}
+function phase(html){ els.phase.innerHTML = html; }
+
+/* ---------- the line ---------- */
+var lineKeys = [];
+function paintLine(){
+  var q = app.st.q, divide = (app.st.pops === null) ? q.length : app.st.pops;
+  if(q.length === 0){
+    els.line.innerHTML = '<span class="lnempty">nobody in line</span>';
+    els.linelegend.textContent = '';
+    lineKeys = [];
+    return;
+  }
+  var prev = {}; lineKeys.forEach(function(k){ prev[k] = true; });
+  var keys = [], html = '';
+  q.forEach(function(p, i){
+    var key = p[0] + ',' + p[1];
+    keys.push(key);
+    if(app.st.pops !== null && i === divide && divide < q.length){
+      html += '<span class="lndiv">joined this minute<br>talks next</span>';
+    }
+    html += '<span class="chip ' + (i < divide ? 'this' : 'next') + (prev[key] ? '' : ' enter') +
+            '" data-k="'+key+'"><svg viewBox="0 0 44 48"><circle class="head" cx="22" cy="13" r="9"/>' +
+            '<path class="body" d="M6 48c0-10 7.2-16 16-16s16 6 16 16z"/></svg>' + key + '</span>';
+  });
+  els.line.innerHTML = html;
+  lineKeys = keys;
+  els.linelegend.innerHTML = (app.st.pops === null)
+    ? '<span style="color:var(--gold)">everyone who already knows</span>'
+    : '<span style="color:var(--gold)">talking this minute</span> · <span style="color:var(--recurse)">joined this minute</span>';
+}
+function chipEl(key){ return els.line.querySelector('.chip[data-k="'+key+'"]'); }
+
+/* ---------- apply an engine event (the ONLY way state changes) ---------- */
+function apply(e, opts){
+  applyEvent(app.st, e);
+  paintRoom(); paintHUD(opts); paintLine();
+}
+
+/* ---------- bubbles ---------- */
+function bubble(from, to, kind, label, travel, delay){
+  var p0 = center(from[0], from[1]), p1 = center(to[0], to[1]);
+  if(kind === 'wall'){ p1 = {x: p0.x + (p1.x-p0.x)*0.62, y: p0.y + (p1.y-p0.y)*0.62}; }
+  var b = document.createElement('div');
+  b.className = 'bub k-' + kind;
+  b.textContent = label;
+  b.style.left = p0.x + 'px'; b.style.top = p0.y + 'px';
+  b.style.transitionDuration = travel + 'ms';
+  b.style.transitionDelay = (delay || 0) + 'ms';
+  els.fx.appendChild(b);
+  void b.offsetWidth;
+  b.style.transform = 'translate(-50%,-50%) translate(' + (p1.x-p0.x) + 'px,' + (p1.y-p0.y) + 'px)';
+  return b;
+}
+function settleBubble(b, kind){
+  if(kind === 'wall') b.classList.add('pop');
+  else if(kind === 'empty') b.classList.add('fade');
+  else if(kind === 'knows') b.classList.add('shrug');
+  else b.classList.add('land');
+  setTimeout(function(){ if(b.parentNode) b.parentNode.removeChild(b); }, 700);
+}
+var BUBTEXT = {wall:'…wall', empty:'empty chair', knows:'already knows', land:'psst!'};
+
+/* ---------- confetti ---------- */
+function confetti(){
+  var box = document.createElement('div');
+  box.className = 'confetti';
+  var colors = ['#ff8a4c','#e3b341','#3fb950','#58a6ff','#ffb27a','#ffffff'];
+  for(var i=0;i<90;i++){
+    var s = document.createElement('i');
+    s.style.left = (Math.random()*100) + 'vw';
+    s.style.background = colors[i % colors.length];
+    s.style.animationDuration = (1.6 + Math.random()*1.8) + 's';
+    s.style.animationDelay = (Math.random()*0.7) + 's';
+    box.appendChild(s);
+  }
+  document.body.appendChild(box);
+  setTimeout(function(){ if(box.parentNode) box.parentNode.removeChild(box); }, 4200);
+}
+
+/* ---------- the director ---------- */
+async function introBeat(){
+  phase('<b>Minute 0.</b> Walk the room, chair by chair.');
+  for(var i=0;i<app.plan.intro.events.length;i++){
+    var e = app.plan.intro.events[i];
+    if(e.t === 'init-scan'){
+      var el = cellAt(e.r, e.c);
+      if(el){
+        el.classList.add('scan');
+        (function(x){ setTimeout(function(){ x.classList.remove('scan'); }, dur(280)); })(el);
+      }
+      await wait(70);
+      continue;
+    }
+    if(e.t === 'seed'){
+      apply(e);
+      phase('<b>' + e.r + ',' + e.c + '</b> already knows → stands up and joins the line.');
+      await wait(220);
+      continue;
+    }
+    if(e.t === 'count-fresh'){
+      apply(e);
+      phase('<b>' + e.r + ',' + e.c + '</b> has not heard it. Counter: ' + app.st.fresh + ' left out.');
+      await wait(110);
+      continue;
+    }
+    if(e.t === 'check-fresh0'){
+      apply(e);
+      continue;
+    }
+    apply(e);
+  }
+  if(app.st.fresh > 0){
+    phase('The line is set: <b>' + app.st.q.length + '</b> person(s) know it, <b>' + app.st.fresh + '</b> still do not. Whistle time.');
+    await wait(650);
+  }
+}
+
+async function whistleBeat(w){
+  apply(w.loopCheckEvent);
+  els.whistle.textContent = '🔔 Minute ' + w.minute + '!';
+  els.whistle.classList.remove('on'); void els.whistle.offsetWidth; els.whistle.classList.add('on');
+  phase('<b>Whistle ' + w.minute + '.</b> The line is frozen at ' + w.ring.length +
+        ' person(s) — only they talk this minute.');
+  await wait(520);
+  if(w.ringStartEvent) apply(w.ringStartEvent);
+  await wait(220);
+}
+
+async function tellerBeat(w, t){
+  var key = t.cell[0] + ',' + t.cell[1];
+  var ch = chipEl(key);
+  if(ch) ch.classList.add('talking');
+  var room = cellAt(t.cell[0], t.cell[1]);
+  if(room) room.classList.add('telling');
+  await wait(150);
+  apply(t.popEvent);                       // leaves the front of the line
+  if(room) room.classList.add('telling');  // survives the repaint
+  phase('<b>' + key + '</b> turns to all four neighbours.');
+
+  var travel = dur(430);
+  var bubs = [];
+  for(var pi=0; pi<t.probes.length; pi++){
+    var p = t.probes[pi];
+    bubs.push(bubble(p.from, p.to, p.kind, BUBTEXT[p.kind], travel, pi * dur(55)));
+  }
+  await wait(430 + 200);
+
+  for(var pj=0; pj<t.probes.length; pj++){
+    var pr = t.probes[pj];
+    var bb = bubs[pj];
+    if(pr.callEvent) applyEvent(app.st, pr.callEvent);
+    if(pr.kind === 'land'){
+      var tgt = cellAt(pr.to[0], pr.to[1]);
+      if(tgt){ tgt.classList.add('shock'); (function(x){ setTimeout(function(){ x.classList.remove('shock'); }, dur(560)); })(tgt); }
+      settleBubble(bb, 'land');
+      apply(pr.outcomeEvent);
+      if(room) room.classList.add('telling');
+      phase('<b>' + pr.to[0] + ',' + pr.to[1] + '</b> hears it — flips orange, joins the back of the line. ' +
+            app.st.fresh + ' still left out.');
+    } else {
+      settleBubble(bb, pr.kind);
+      if(pr.outcomeEvent) apply(pr.outcomeEvent, {bumpFresh:false});
+      if(room) room.classList.add('telling');
+      phase(pr.kind === 'wall'
+        ? 'That direction is the wall — the whisper hits nothing.'
+        : (pr.kind === 'empty'
+           ? '<b>' + pr.to[0] + ',' + pr.to[1] + '</b> is an empty chair — nothing to tell.'
+           : '<b>' + pr.to[0] + ',' + pr.to[1] + '</b> already knows — the whisper bounces off.'));
+    }
+    await wait(140);
+  }
+  if(room) room.classList.remove('telling');
+  await wait(120);
+}
+
+async function waveEndBeat(w){
+  if(w.levelIncEvent){
+    apply(w.levelIncEvent);
+    phase('Ring drained. <b>Minute ' + app.st.level + '</b> is done.');
+  }
+  await wait(320);
+}
+
+/* ending decorations — used both by the cinematic and by an instant snap */
+function decorateEnding(instant){
+  var end = app.plan.ending;
+  if(!end) return;
+
+  if(end.kind === 'early0'){
+    els.banner.className = 'banner zero show';
+    els.banner.innerHTML = '<span class="big">Answer: 0 minutes</span>' +
+      'Nobody in this room is waiting to hear it — the counter of people left out was already 0 before the first whistle. ' +
+      'No whistle is ever blown. That is the <code>if fresh == 0: return 0</code> guard, and it is also what stops an ' +
+      'empty line from wrongly reporting <code>-1</code>.';
+    phase('<b>No whistle needed.</b>');
+    return;
+  }
+
+  if(end.kind === 'freshExit'){
+    els.whistle.classList.remove('on');
+    var chips = els.line.querySelectorAll('.chip');
+    for(var i=0;i<chips.length;i++) chips[i].classList.add('leftover');
+    els.banner.className = 'banner ok show';
+    els.banner.innerHTML = '<span class="big">Answer: ' + app.st.result + ' minutes</span>' +
+      'Everyone in the room has heard the rumor.' +
+      (end.leftover.length
+        ? '<div class="callout"><b>Look at the line — it is not empty.</b> ' + end.leftover.length +
+          ' person(s) are still standing there waiting for a whistle that will never come. ' +
+          'There is nobody left for them to tell, so blowing the whistle again would waste a minute ' +
+          '<em>and</em> add a phantom minute to the answer. That is exactly why the loop reads ' +
+          '<code>while q and fresh &gt; 0</code>, not just <code>while q</code>.</div>'
+        : '');
+    phase('<b>Done in ' + app.st.result + ' minute(s).</b>');
+    if(!instant) confetti();
+    return;
+  }
+
+  // kind === 'exit' — line ran dry with people still uninformed
+  els.whistle.classList.remove('on');
+  els.stage.classList.add('dimmed');
+  var still = [];
+  for(var r=0;r<app.st.grid.length;r++)
+    for(var c=0;c<app.st.grid[0].length;c++)
+      if(app.st.grid[r][c] === 1){ cellEls[r][c].classList.add('spot'); still.push(r+','+c); }
+  els.banner.className = 'banner bad show';
+  els.banner.innerHTML = '<span class="big">Answer: -1</span>' +
+    'The line emptied and <b>' + app.st.fresh + '</b> person(s) — ' + still.join(' · ') +
+    ' — still have not heard it. Every path to them is empty chairs, so no number of whistles ever reaches them. ' +
+    'The room is done spreading; the answer is <code>-1</code>.';
+  phase('<b>Line empty, ' + app.st.fresh + ' still in the dark.</b>');
+}
+
+async function endingBeat(){
+  var end = app.plan.ending;
+  if(!end) return;
+  apply(end.event);
+  if(end.verdictEvent && end.verdictEvent !== end.event) apply(end.verdictEvent);
+  decorateEnding(false);
+}
+
+async function playBeat(b){
+  if(b.kind === 'intro')   return introBeat();
+  if(b.kind === 'whistle') return whistleBeat(b.wave);
+  if(b.kind === 'teller')  return tellerBeat(b.wave, b.teller);
+  if(b.kind === 'waveend') return waveEndBeat(b.wave);
+  if(b.kind === 'ending')  return endingBeat();
+}
+
+async function director(){
+  var g = app.gen;
+  app.live = true;
+  try{
+    while(app.beat < app.beats.length - 1){
+      await playBeat(app.beats[app.beat + 1]);
+      app.beat++;
+      paintBeatCounter();
+    }
+    app.finished = true;
+    app.playing = false;
+    setBtn();
+  }catch(err){
+    if(err !== CANCEL) throw err;
+  }finally{
+    if(app.gen === g) app.live = false;
+  }
+}
+
+/* ---------- scrubbing: snap straight to a beat's state ----------
+   The state at beat i is defined only by the engine: initState + events[0 .. beat.end). */
+function clearFX(){
+  var bubs = els.fx.querySelectorAll('.bub');
+  for(var i=0;i<bubs.length;i++) bubs[i].remove();
+  for(var r=0;r<cellEls.length;r++)
+    for(var c=0;c<cellEls[0].length;c++)
+      cellEls[r][c].classList.remove('scan','telling','shock','spot');
+  els.stage.classList.remove('dimmed');
+  els.banner.className = 'banner';
+  els.banner.innerHTML = '';
+}
+
+function snapTo(i){
+  app.beat = Math.max(0, Math.min(app.beats.length - 1, i));
+  var b = app.beats[app.beat];
+
+  app.st = initState(app.grid);
+  for(var k=0; k<b.end; k++) applyEvent(app.st, app.sim.events[k]);
+
+  clearFX();
+  paintRoom(); paintLine();
+  els.hudMin.textContent = app.st.level;
+  els.hudFresh.textContent = app.st.fresh;
+
+  if(b.wave){
+    els.whistle.textContent = '🔔 Minute ' + b.wave.minute + '!';
+    els.whistle.classList.add('on');
+  } else {
+    els.whistle.classList.remove('on');
+  }
+
+  if(b.kind === 'ending'){ decorateEnding(true); }
+  else { phase(b.label); }
+
+  // a quiet marker of what this beat just did
+  if(b.kind === 'teller'){
+    var room = cellAt(b.teller.cell[0], b.teller.cell[1]);
+    if(room) room.classList.add('telling');
+  }
+
+  app.finished = (app.beat === app.beats.length - 1);
+  setBtn();
+  paintBeatCounter();
+}
+
+function paintBeatCounter(){
+  els.beatc.textContent = 'beat ' + app.beat + ' / ' + (app.beats.length - 1);
+  els.prevbtn.disabled = (app.beat === 0);
+  els.nextbtn.disabled = (app.beat === app.beats.length - 1);
+}
+
+function cancel(){ app.gen++; app.playing = false; app.live = false; }
+
+function step(d){
+  cancel();
+  els.ovl.classList.add('hide');
+  app.started = true;
+  snapTo(app.beat + d);
+}
+
+/* ---------- wiring ---------- */
+function setBtn(){
+  if(app.finished) els.playbtn.textContent = '⟲ Replay';
+  else if(app.playing) els.playbtn.textContent = '❚❚ Pause';
+  else els.playbtn.textContent = app.started ? '▶ Resume' : '▶ Play the story';
+}
+
+function reset(){
+  cancel();
+  app.started = false; app.finished = false;
+  app.sim = simulate(app.grid);
+  app.plan = groupWaves(app.sim, {initState:initState, applyEvent:applyEvent});
+  app.beats = buildBeats(app.sim, app.plan);
+  app.beat = 0;
+  app.st = initState(app.grid);
+  buildRoom();
+  paintRoom(); paintLine();
+  els.hudMin.textContent = '0'; els.hudFresh.textContent = '0';
+  els.stage.classList.remove('dimmed');
+  els.whistle.classList.remove('on');
+  els.banner.className = 'banner';
+  els.banner.innerHTML = '';
+  els.ovl.classList.remove('hide');
+  phase('Press play to open the room.');
+  setBtn();
+  paintBeatCounter();
+}
+
+function start(){
+  els.ovl.classList.add('hide');
+  app.started = true; app.playing = true;
+  setBtn();
+  if(!app.live) director();
+}
+
+els.playbtn.addEventListener('click', function(){
+  if(app.finished){ reset(); start(); return; }
+  if(app.playing){ app.playing = false; setBtn(); return; }
+  start();
+});
+els.bigplay.addEventListener('click', function(){
+  if(app.finished) reset();
+  start();
+});
+els.nextbtn.addEventListener('click', function(){ step(1); });
+els.prevbtn.addEventListener('click', function(){ step(-1); });
+els.speed.addEventListener('input', function(){
+  app.speed = +els.speed.value;
+  els.speedv.textContent = app.speed.toFixed(1) + '×';
+});
+els.preset.addEventListener('change', function(){
+  app.grid = PRESETS[+els.preset.value].grid.map(function(r){ return r.slice(); });
+  reset();
+});
+document.addEventListener('keydown', function(ev){
+  if(ev.key === ' '){ els.playbtn.click(); ev.preventDefault(); }
+  else if(ev.key === 'ArrowRight'){ step(1); ev.preventDefault(); }
+  else if(ev.key === 'ArrowLeft'){ step(-1); ev.preventDefault(); }
+});
+
+reset();
+</script>
+
+</body>
+</html>

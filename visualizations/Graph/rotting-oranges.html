@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rotting Oranges — Animated Walkthrough (LC 994)</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2431; --panel3:#222c3a;
+    --border:#2d3644; --text:#e6edf3; --dim:#8b95a5;
+    --accent:#7c9cff; --recurse:#58a6ff; --gold:#e3b341;
+    --inc:#3fb950; --prune:#f85149; --success:#2ea043;
+    --fresh:#f0883e; --rot:#6e4b2a; --rotline:#b9791f; --empty:#1b2029;
+    --mono:'SF Mono',ui-monospace,Menlo,Consolas,monospace;
+    --sans:'Segoe UI',system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.5;padding:0 0 60px}
+  a{color:var(--recurse)}
+  .wrap{max-width:1500px;margin:0 auto;padding:16px}
+  header h1{font-size:22px;margin:0 0 2px;letter-spacing:.3px}
+  header h1 span{color:var(--accent)}
+  .sub{color:var(--dim);font-size:13px;margin:0 0 12px}
+  code{background:var(--panel3);padding:1px 5px;border-radius:5px;font-family:var(--mono);font-size:12.5px}
+
+  /* WHY */
+  details.intro{background:var(--panel);border:1px solid var(--border);border-radius:12px;margin-bottom:14px}
+  details.intro>summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none}
+  details.intro>summary::-webkit-details-marker{display:none}
+  details.intro>summary::before{content:'▸ ';color:var(--accent)}
+  details.intro[open]>summary::before{content:'▾ '}
+  .intro-body{padding:0 16px 16px;font-size:14px;color:#cdd6e0}
+  .intro-body h4{margin:16px 0 6px;color:var(--gold);font-size:13px;text-transform:uppercase;letter-spacing:.6px}
+  .intro-body p{margin:6px 0}
+  .rule{background:var(--panel2);border:1px solid var(--border);border-left:4px solid var(--gold);
+    border-radius:9px;padding:12px 14px;margin:10px 0;font-size:14px}
+  .rule b{color:var(--gold)}
+  .breaks{background:var(--panel2);border:1px solid var(--border);border-left:4px solid var(--prune);
+    border-radius:9px;padding:12px 14px;margin:10px 0;font-size:13.5px}
+  .breaks b{color:var(--prune)}
+  .waves{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0;font-family:var(--mono);font-size:12px}
+  .waves .w{background:var(--panel3);border:1px solid var(--border);border-radius:7px;padding:5px 9px}
+  .waves .w b{color:var(--gold)}
+
+  /* controls */
+  .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--panel);
+    border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:10px}
+  .btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:7px 12px;
+    border-radius:8px;cursor:pointer;font-size:13px;font-weight:600}
+  .btn:hover{border-color:var(--accent)}
+  .btn.primary{background:var(--accent);color:#0b1020;border-color:var(--accent)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .ctl-sep{width:1px;height:22px;background:var(--border)}
+  .speed{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--dim)}
+  .stepc{font-family:var(--mono);font-size:13px;color:var(--dim);margin-left:auto}
+  select{background:var(--panel2);border:1px solid var(--border);color:var(--text);
+    padding:7px 9px;border-radius:8px;font-size:13px;font-family:var(--sans)}
+  input[type=range]{accent-color:var(--accent)}
+  .kbdhint{font-size:11.5px;color:var(--dim);margin:-4px 0 12px}
+  .kbdhint kbd{background:var(--panel3);border:1px solid var(--border);border-radius:4px;
+    padding:1px 5px;font-family:var(--mono);font-size:11px}
+
+  /* narration + alerts */
+  .narr{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--accent);
+    border-radius:9px;padding:11px 13px;margin-bottom:10px;font-size:13.5px;min-height:44px}
+  .narr b{color:var(--gold)}
+  .narr .ev{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.5px;
+    background:var(--panel3);border:1px solid var(--border);border-radius:5px;padding:1px 6px;
+    margin-right:7px;color:var(--dim)}
+  .alert{border-radius:9px;padding:10px 13px;margin-bottom:12px;font-size:13px;display:none}
+  .alert.show{display:block}
+  .alert.info{background:rgba(124,156,255,.10);border:1px solid var(--accent);color:#cdd6e0}
+  .alert.warn{background:rgba(227,179,65,.10);border:1px solid var(--gold);color:#f0e2be}
+  .alert b{color:var(--gold)}
+
+  /* panels */
+  .cols{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.25fr) minmax(0,1fr);gap:12px;align-items:start}
+  @media(max-width:1150px){.cols{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:11px;padding:11px 13px;margin-bottom:12px}
+  .panel h3{margin:0 0 8px;font-size:11.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--dim);font-weight:700}
+  .panel h3 .hint{float:right;text-transform:none;letter-spacing:0;font-weight:400;color:var(--dim);font-size:11px}
+
+  /* grid */
+  .gridwrap{display:flex;justify-content:center;padding:6px 0 2px}
+  .cells{display:grid;gap:6px}
+  .cell{width:56px;height:56px;border-radius:10px;border:2px solid var(--border);background:var(--empty);
+    display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:19px;
+    font-weight:700;color:var(--dim);cursor:default;position:relative;transition:background .18s,border-color .18s,color .18s}
+  .cell.editable{cursor:pointer}
+  .cell.editable:hover{border-color:var(--accent)}
+  .cell.v1{background:#4a2f10;border-color:var(--fresh);color:var(--fresh)}
+  .cell.v2{background:#2b1d10;border-color:var(--rotline);color:var(--rotline)}
+  .cell.inq{box-shadow:0 0 0 2px rgba(88,166,255,.35) inset}
+  .cell.ring{border-color:var(--gold);box-shadow:0 0 0 3px rgba(227,179,65,.30)}
+  .cell.cur{border-color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.35)}
+  .cell.scan{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,156,255,.28)}
+  .cell.probe{border-style:dashed;border-color:var(--recurse)}
+  .cell.bad{border-style:dashed;border-color:var(--prune)}
+  .cell.newrot{animation:pulse .55s ease-out}
+  @keyframes pulse{0%{transform:scale(1);box-shadow:0 0 0 0 rgba(240,136,62,.75)}
+                   50%{transform:scale(1.14);box-shadow:0 0 0 12px rgba(240,136,62,0)}
+                   100%{transform:scale(1);box-shadow:0 0 0 0 rgba(240,136,62,0)}}
+  .cell .rc{position:absolute;top:2px;left:4px;font-size:9px;color:var(--dim);font-weight:400}
+  .oob{position:relative}
+  .oobmark{position:absolute;border:2px dashed var(--prune);border-radius:10px;width:56px;height:56px;
+    display:flex;align-items:center;justify-content:center;color:var(--prune);font-size:18px;pointer-events:none}
+  .legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11.5px;color:var(--dim);margin-top:10px;justify-content:center}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+
+  /* code */
+  pre.code{margin:0;font-family:var(--mono);font-size:12.3px;line-height:1.62;overflow-x:auto;
+    max-height:620px;overflow-y:auto}
+  pre.code .ln{display:block;padding:0 8px 0 4px;border-left:3px solid transparent;white-space:pre}
+  pre.code .ln .no{display:inline-block;width:22px;color:#4a5566;text-align:right;margin-right:8px;user-select:none}
+  pre.code .ln.hl{background:rgba(227,179,65,.16);border-left-color:var(--gold)}
+  pre.code .ln.hl2{background:rgba(227,179,65,.09);border-left-color:rgba(227,179,65,.5)}
+  pre.code .ln.guard{background:rgba(248,81,73,.14);border-left-color:var(--prune)}
+  .cm{color:var(--dim)}.kw{color:#ff7b72}.bi{color:#79c0ff}.nu{color:#79c0ff}.fn{color:#d2a8ff}
+
+  /* state */
+  .kv{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px}
+  .stat{background:var(--panel2);border:1px solid var(--border);border-radius:9px;padding:8px 10px}
+  .stat .k{color:var(--gold);font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;display:block}
+  .stat .v{font-family:var(--mono);font-size:19px;font-weight:700}
+  .stat.fresh .v{color:var(--fresh)}
+  .stat.level .v{color:var(--accent)}
+  .stat.pops .v{color:var(--recurse)}
+  .stat.qsz .v{color:var(--text)}
+  .qwrap{background:var(--panel2);border:1px solid var(--border);border-radius:9px;padding:9px 10px;min-height:56px}
+  .qhead{font-size:11px;color:var(--dim);display:flex;justify-content:space-between;margin-bottom:6px}
+  .qitems{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+  .qchip{background:var(--panel3);border:1px solid var(--border);border-radius:7px;padding:4px 9px;
+    font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--text)}
+  .qchip.this{border-color:var(--gold);color:var(--gold)}
+  .qchip.next{border-color:var(--recurse);color:var(--recurse)}
+  .qdiv{font-family:var(--mono);font-size:10.5px;color:var(--dim);border-left:2px dashed var(--dim);
+    padding-left:7px;margin-left:2px}
+  .qempty{color:var(--dim);font-family:var(--mono);font-size:12px}
+  .verdict{border-radius:9px;padding:11px 13px;margin-top:10px;font-size:13.5px;
+    border:1px solid var(--border);border-left:4px solid var(--dim);background:var(--panel2);color:var(--dim)}
+  .verdict.ok{border-left-color:var(--inc);color:#bfe9c8}
+  .verdict.bad{border-left-color:var(--prune);color:#ffc7c2}
+  .verdict b{font-family:var(--mono);font-size:16px}
+  .note{font-size:11.5px;color:var(--dim);margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Rotting Oranges — <span>multi-source BFS, animated</span></h1>
+  <p class="sub">LeetCode 994 · this page replays <b>your exact submitted Python</b>, one micro-step at a time, forwards and backwards. · <a href="rumor-room.html">see the story version →</a></p>
+</header>
+
+<details class="intro" open>
+  <summary>WHY this is BFS from many starting points at once</summary>
+  <div class="intro-body">
+    <p>Forget code for a second. Put a <b>fire</b> on a dry field. Every burning tile sets its 4 neighbours alight, and that takes exactly one minute. Now light <b>five</b> tiles at the same time. After one minute, every tile touching <em>any</em> of those five is burning. After two minutes, the ring after that. The fire does not take turns — all the fronts advance <b>simultaneously</b>.</p>
+    <p>That is the whole problem. Rotten oranges are the burning tiles. The question "how many minutes until everything is rotten?" is "how many synchronized waves does the fire need?".</p>
+
+    <div class="rule">
+      <b>The two ideas that make the code work.</b><br>
+      1. <b>Multi-source BFS</b> — seed the queue with <em>every</em> rotten cell before the loop starts. BFS then behaves as if there were one imaginary super-source connected to all of them, so all fronts expand together, for free.<br>
+      2. <b>1 minute = 1 BFS level.</b> Instead of storing a time with each cell, you drain the queue <em>a whole ring at a time</em>: <code>for _ in range(len(q))</code> snapshots how many cells belong to this minute, pops exactly those, and everything they push belongs to the next minute. After the ring is drained, <code>level += 1</code>. That is the clock.
+    </div>
+
+    <div class="waves">
+      <span class="w"><b>level 0</b> = cells rotten at the start</span>
+      <span class="w">→</span>
+      <span class="w"><b>level 1</b> = rotted at minute 1</span>
+      <span class="w">→</span>
+      <span class="w"><b>level 2</b> = minute 2</span>
+      <span class="w">→ …</span>
+    </div>
+
+    <h4>Why <code>len(q)</code> must be read <em>before</em> the pops</h4>
+    <p>Inside the ring you append new cells to the same queue. If you looped "while q" instead, this minute and the next minute would blur into one and <code>level</code> would count nothing meaningful. Freezing <code>len(q)</code> at the top of the ring is what keeps the two generations separated — the queue is really two segments back to back: <span style="color:var(--gold)">this minute's ring</span> at the front, <span style="color:var(--recurse)">next minute's ring</span> behind it. The state panel draws that divider.</p>
+
+    <div class="breaks">
+      <b>Why DFS cannot answer this.</b> DFS dives down one path as deep as it can and only then backtracks. It would happily reach a far orange through a long detour before reaching a near one, so the depth at which it first touches a cell is <em>not</em> the minute that cell rots. You would have to revisit cells with smaller times and re-expand them — that is Dijkstra/BFS logic bolted onto DFS. BFS gets it right on the first touch precisely because it never looks at distance <em>d+1</em> before finishing all of distance <em>d</em>.
+    </div>
+
+    <h4>The two exits</h4>
+    <p><code>while q and fresh &gt; 0</code> has two ways to stop. Queue empties while fresh oranges remain → those oranges are walled off, answer <code>-1</code>. Or <code>fresh</code> hits 0 → everything rotted, stop <em>immediately</em> even though the queue still holds cells. Those leftover cells have nothing left to infect, so popping them would be pure wasted work. Watch for the callout when that happens.</p>
+    <p class="note">Complexity: every cell is seeded once, popped once, and looked at by at most 4 neighbours → <b>O(rows × cols)</b> time, <b>O(rows × cols)</b> queue in the worst case.</p>
+  </div>
+</details>
+
+<div class="controls">
+  <label class="speed">Preset
+    <select id="preset"></select>
+  </label>
+  <span class="ctl-sep"></span>
+  <button class="btn" id="prev">◀ Prev</button>
+  <button class="btn primary" id="play">▶ Play</button>
+  <button class="btn" id="next">Next ▶</button>
+  <button class="btn" id="reset">⟲ Reset</button>
+  <span class="ctl-sep"></span>
+  <label class="speed">Speed
+    <input type="range" id="speed" min="60" max="1200" step="20" value="480">
+    <span id="speedv" style="font-family:var(--mono)">480ms</span>
+  </label>
+  <span class="stepc" id="stepc">step 0 / 0</span>
+</div>
+<p class="kbdhint">Click a cell (only at step 0) to cycle it <kbd>empty</kbd> → <kbd>fresh</kbd> → <kbd>rotten</kbd>. Keyboard: <kbd>←</kbd> <kbd>→</kbd> step, <kbd>space</kbd> play/pause.</p>
+
+<div class="narr" id="narr"><span class="ev">READY</span>Press <b>Next</b> to start scanning the grid, or edit the grid first.</div>
+<div class="alert warn" id="callout"></div>
+
+<div class="cols">
+  <div class="panel">
+    <h3>Grid <span class="hint" id="gridhint">editable</span></h3>
+    <div class="gridwrap"><div class="cells" id="cells"></div></div>
+    <div class="legend">
+      <span><i style="background:var(--empty);border:1px solid var(--border)"></i>0 empty</span>
+      <span><i style="background:#4a2f10;border:1px solid var(--fresh)"></i>1 fresh</span>
+      <span><i style="background:#2b1d10;border:1px solid var(--rotline)"></i>2 rotten</span>
+      <span><i style="background:transparent;border:2px solid var(--gold)"></i>in this minute's ring</span>
+      <span><i style="background:transparent;border:2px solid var(--recurse)"></i>neighbour being probed</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Your code <span class="hint">current line highlighted</span></h3>
+    <pre class="code" id="code"></pre>
+  </div>
+
+  <div class="panel">
+    <h3>State</h3>
+    <div class="kv">
+      <div class="stat fresh"><span class="k">fresh</span><span class="v" id="s-fresh">0</span></div>
+      <div class="stat level"><span class="k">level (minutes)</span><span class="v" id="s-level">0</span></div>
+      <div class="stat pops"><span class="k">pops left this ring</span><span class="v" id="s-pops">–</span></div>
+      <div class="stat qsz"><span class="k">len(q)</span><span class="v" id="s-qsz">0</span></div>
+    </div>
+    <div class="qwrap">
+      <div class="qhead"><span>deque q — front is leftmost</span><span id="q-legend"></span></div>
+      <div class="qitems" id="qitems"><span class="qempty">empty</span></div>
+    </div>
+    <div class="verdict" id="verdict">Return value: <b>—</b> (not finished yet)</div>
+    <p class="note" id="statenote"></p>
+  </div>
+</div>
+
+</div>
+
+<script id="engine">
+/* ===== ENGINE-START =====
+   Pure algorithm layer. Mirrors the Python line-for-line. No DOM access in here.
+   Extracted verbatim by the Node verification script. */
+
+var DIRS = [[1,0],[0,1],[-1,0],[0,-1]];
+
+var PRESETS = [
+  {id:'classic',     name:'Classic spread → 4',        grid:[[2,1,1],[1,1,0],[0,1,1]]},
+  {id:'unreachable', name:'Walled-off orange → -1',    grid:[[2,1,1],[0,1,1],[1,0,1]]},
+  {id:'nofresh',     name:'No fresh oranges → 0',      grid:[[0,2]]},
+  {id:'single',      name:'Single source, one line → 4', grid:[[2,1,1,1,1]]}
+];
+
+/* Line numbers refer to the rendered listing (1 = "from collections import deque"). */
+function simulate(grid0){
+  var rows = grid0.length;
+  var cols = grid0[0].length;
+  var grid = grid0.map(function(row){ return row.slice(); });
+  var events = [];
+  var q = [];
+  var fresh = 0, level = 0, pops = null; // pops = null means "not inside a ring yet"
+  function E(e){ events.push(e); return e; }
+
+  E({t:'setup', line:4, msg:'rows = len(grid) = ' + rows});
+  E({t:'setup', line:5, msg:'cols = len(grid[0]) = ' + cols});
+  E({t:'setup', line:6, msg:'q = deque() — empty queue, about to be seeded with EVERY rotten cell'});
+  E({t:'setup', line:7, msg:'fresh = 0 — the countdown of oranges still to save'});
+
+  // for r in range(rows): for c in range(cols):  -> row-major scan
+  for(var r=0; r<rows; r++){
+    for(var c=0; c<cols; c++){
+      E({t:'init-scan', line:10, lines:[8,9,10], r:r, c:c,
+         msg:'Scan (' + r + ',' + c + ') → value ' + grid[r][c]});
+      if(grid[r][c] === 2){
+        E({t:'seed', line:11, r:r, c:c, qPush:[r,c],
+           msg:'(' + r + ',' + c + ') is already rotten → seed it into q. Multi-source BFS: all sources go in before the loop.'});
+        q.push([r,c]);
+      } else if(grid[r][c] === 1){
+        E({t:'count-fresh', line:13, lines:[12,13], r:r, c:c, freshDelta:1,
+           msg:'(' + r + ',' + c + ') is fresh → fresh becomes ' + (fresh+1)});
+        fresh++;
+      }
+    }
+  }
+
+  E({t:'check-fresh0', line:15,
+     msg:'fresh == 0 ? ' + (fresh === 0 ? 'yes — nothing to rot, answer is 0 minutes' : 'no (fresh = ' + fresh + ') — keep going')});
+  if(fresh === 0){
+    E({t:'early-return-0', line:16, result:0,
+       msg:'return 0 — zero minutes needed. This guard also stops an empty-queue grid from wrongly returning -1.'});
+    return {events:events, result:0, rows:rows, cols:cols, grid0:grid0};
+  }
+
+  E({t:'setup', line:27, msg:'level = 0 — the minute counter'});
+
+  while(true){
+    var enter = (q.length > 0 && fresh > 0);
+    var freshExit = (q.length > 0 && fresh === 0);
+    E({t:'loop-check', line:28, exit:!enter, freshExit:freshExit,
+       msg:'while q and fresh>0 → len(q) = ' + q.length + ', fresh = ' + fresh + ' → ' +
+           (enter ? 'enter another minute' :
+            (freshExit ? 'STOP — fresh hit 0 while q still holds ' + q.length + ' cell(s); popping them would be wasted work'
+                       : 'STOP — queue is empty and ' + fresh + ' fresh orange(s) can never be reached'))});
+    if(!enter) break;
+
+    var n = q.length;
+    E({t:'ring-start', line:29, popsSet:[pops, n],
+       msg:'for _ in range(len(q)) → len(q) frozen at ' + n + '. Exactly these ' + n + ' cell(s) are minute ' + level + '’s ring; anything they push belongs to minute ' + (level+1) + '.'});
+    pops = n;
+
+    for(var i=0; i<n; i++){
+      var cell = q[0];
+      var cr = cell[0], cc = cell[1];
+      E({t:'pop', line:30, r:cr, c:cc, qPop:[cr,cc], popsSet:[pops, pops-1],
+         msg:'popleft() → (' + cr + ',' + cc + '). ' + (pops-1) + ' pop(s) left in this ring.'});
+      q.shift();
+      pops--;
+
+      for(var d=0; d<DIRS.length; d++){
+        var dr = DIRS[d][0], dc = DIRS[d][1];
+        var nr = cr + dr, nc = cc + dc;
+        E({t:'call', line:32, lines:[31,32], r:cr, c:cc, nr:nr, nc:nc, dr:dr, dc:dc,
+           msg:'addfruit(' + nr + ',' + nc + ')  —  neighbour (' + dr + ',' + dc + ') of (' + cr + ',' + cc + ')'});
+
+        if(Math.min(nr,nc) < 0 || nr >= rows || nc >= cols){
+          E({t:'guard-oob', line:21, lines:[20,21], r:cr, c:cc, nr:nr, nc:nc,
+             msg:'(' + nr + ',' + nc + ') falls off the board → bounds guard returns, nothing changes.'});
+          continue;
+        }
+        if(grid[nr][nc] !== 1){
+          E({t:'guard-notfresh', line:23, lines:[22,23], r:cr, c:cc, nr:nr, nc:nc, val:grid[nr][nc],
+             msg:'(' + nr + ',' + nc + ') holds ' + grid[nr][nc] + ', not a fresh 1 → returns. This is also the visited check: already-rotten cells are 2, so they can never be re-queued.'});
+          continue;
+        }
+        E({t:'rot', line:26, lines:[24,25,26], r:cr, c:cc, nr:nr, nc:nc,
+           gridSet:[nr,nc,1,2], qPush:[nr,nc], freshDelta:-1,
+           msg:'(' + nr + ',' + nc + ') rots: grid → 2, appended to q for minute ' + (level+1) + ', fresh drops to ' + (fresh-1) + '.'});
+        grid[nr][nc] = 2;
+        q.push([nr,nc]);
+        fresh--;
+      }
+    }
+
+    E({t:'level-inc', line:33, levelDelta:1,
+       msg:'Ring drained → level becomes ' + (level+1) + '. One whole minute of spreading is done.'});
+    level++;
+  }
+
+  var res = (fresh === 0) ? level : -1;
+  E({t:'verdict', line:34, result:res,
+     msg:'return level if fresh==0 else -1 → fresh = ' + fresh + ' so the answer is ' + res +
+         (res === -1 ? ' (some orange is unreachable)' : ' minute(s)')});
+  return {events:events, result:res, rows:rows, cols:cols, grid0:grid0};
+}
+
+/* ---- replayer state: forward + backward over the event log ---- */
+function initState(grid0){
+  return {
+    grid: grid0.map(function(row){ return row.slice(); }),
+    q: [], fresh: 0, level: 0, pops: null, result: null
+  };
+}
+function applyEvent(st, e){
+  if(e.gridSet) st.grid[e.gridSet[0]][e.gridSet[1]] = e.gridSet[3];
+  if(e.qPop)  st.q.shift();
+  if(e.qPush) st.q.push(e.qPush.slice());
+  if(e.freshDelta) st.fresh += e.freshDelta;
+  if(e.levelDelta) st.level += e.levelDelta;
+  if(e.popsSet) st.pops = e.popsSet[1];
+  if(e.result !== undefined) st.result = e.result;
+}
+function undoEvent(st, e){
+  if(e.result !== undefined) st.result = null;
+  if(e.popsSet) st.pops = e.popsSet[0];
+  if(e.levelDelta) st.level -= e.levelDelta;
+  if(e.freshDelta) st.fresh -= e.freshDelta;
+  if(e.qPush) st.q.pop();
+  if(e.qPop)  st.q.unshift(e.qPop.slice());
+  if(e.gridSet) st.grid[e.gridSet[0]][e.gridSet[1]] = e.gridSet[2];
+}
+
+if(typeof module !== 'undefined' && module.exports){
+  module.exports = {simulate:simulate, initState:initState, applyEvent:applyEvent,
+                    undoEvent:undoEvent, PRESETS:PRESETS, DIRS:DIRS};
+}
+/* ===== ENGINE-END ===== */
+</script>
+
+<script>
+/* ---------------- UI: a pure replayer over the event log ---------------- */
+var PY = [
+"from collections import deque",
+"class Solution:",
+"    def orangesRotting(self, grid: List[List[int]]) -> int:",
+"        rows=len(grid)",
+"        cols=len(grid[0])",
+"        q=deque()",
+"        fresh=0",
+"        for r in range(rows):",
+"            for c in range(cols):",
+"                if grid[r][c]==2:",
+"                    q.append((r,c))",
+"                elif grid[r][c]==1:",
+"                    fresh+=1",
+"",
+"        if fresh ==0:",
+"            return 0",
+"",
+"        def addfruit(r,c):",
+"            nonlocal fresh",
+"            if(min(r,c)<0 or r>=rows or c>=cols ):",
+"                return",
+"            if grid[r][c]!=1:",
+"                return",
+"            grid[r][c]=2",
+"            q.append((r,c))",
+"            fresh-=1",
+"        level=0",
+"        while q and fresh>0:",
+"            for _ in range(len(q)):",
+"                r,c=q.popleft()",
+"                for dr,dc in [(1,0),(0,1),(-1,0),(0,-1)]:",
+"                    addfruit(r+dr,c+dc)",
+"            level+=1",
+"        return level if fresh ==0 else -1"
+];
+
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+var TOKENS = /\b(from|import|class|def|nonlocal|if|elif|else|return|for|in|while)\b|\b(len|range|min|deque|append|popleft|int|List|self)\b|\b(\d+)\b/g;
+function hl(line){
+  return esc(line).replace(TOKENS, function(m, kw, bi, nu){
+    if(kw) return '<span class="kw">'+kw+'</span>';
+    if(bi) return '<span class="bi">'+bi+'</span>';
+    return '<span class="nu">'+nu+'</span>';
+  });
+}
+
+var codeEl = document.getElementById('code');
+(function buildCode(){
+  var out = '';
+  for(var i=0;i<PY.length;i++){
+    out += '<span class="ln" id="L'+(i+1)+'"><span class="no">'+(i+1)+'</span>'+(PY[i]===''?' ':hl(PY[i]))+'</span>';
+  }
+  codeEl.innerHTML = out;
+})();
+
+/* ------- app state ------- */
+var app = {
+  grid: PRESETS[0].grid.map(function(r){return r.slice();}),
+  sim: null, st: null, idx: 0, timer: null, speed: 480
+};
+
+var els = {
+  cells: document.getElementById('cells'), preset: document.getElementById('preset'),
+  prev: document.getElementById('prev'), next: document.getElementById('next'),
+  play: document.getElementById('play'), reset: document.getElementById('reset'),
+  speed: document.getElementById('speed'), speedv: document.getElementById('speedv'),
+  stepc: document.getElementById('stepc'), narr: document.getElementById('narr'),
+  callout: document.getElementById('callout'), gridhint: document.getElementById('gridhint'),
+  sFresh: document.getElementById('s-fresh'), sLevel: document.getElementById('s-level'),
+  sPops: document.getElementById('s-pops'), sQsz: document.getElementById('s-qsz'),
+  qitems: document.getElementById('qitems'), qlegend: document.getElementById('q-legend'),
+  verdict: document.getElementById('verdict'), note: document.getElementById('statenote')
+};
+
+PRESETS.forEach(function(p,i){
+  var o = document.createElement('option'); o.value = i; o.textContent = p.name;
+  els.preset.appendChild(o);
+});
+
+function rebuild(){
+  app.sim = simulate(app.grid);
+  app.st = initState(app.grid);
+  app.idx = 0;
+  render();
+}
+function curEvent(){ return app.idx > 0 ? app.sim.events[app.idx-1] : null; }
+
+function stepFwd(){
+  if(app.idx >= app.sim.events.length) return false;
+  applyEvent(app.st, app.sim.events[app.idx]);
+  app.idx++;
+  render();
+  return true;
+}
+function stepBack(){
+  if(app.idx === 0) return false;
+  app.idx--;
+  undoEvent(app.st, app.sim.events[app.idx]);
+  render();
+  return true;
+}
+
+/* ------- render ------- */
+function render(){
+  var e = curEvent();
+  var st = app.st;
+  var rows = app.grid.length, cols = app.grid[0].length;
+  var editable = (app.idx === 0);
+
+  // grid
+  els.cells.style.gridTemplateColumns = 'repeat(' + cols + ', 56px)';
+  var inQ = {}, ringSet = {};
+  var divide = (st.pops === null) ? st.q.length : st.pops;
+  st.q.forEach(function(p, i){
+    inQ[p[0]+','+p[1]] = true;
+    if(i < divide) ringSet[p[0]+','+p[1]] = true;
+  });
+  var html = '';
+  for(var r=0;r<rows;r++){
+    for(var c=0;c<cols;c++){
+      var key = r+','+c;
+      var cls = 'cell v' + st.grid[r][c];
+      if(editable) cls += ' editable';
+      if(inQ[key]) cls += ' inq';
+      if(ringSet[key]) cls += ' ring';
+      if(e){
+        if((e.t==='init-scan'||e.t==='seed'||e.t==='count-fresh') && e.r===r && e.c===c) cls += ' scan';
+        if(e.t==='pop' && e.r===r && e.c===c) cls += ' cur';
+        if(e.t==='call' && e.nr===r && e.nc===c) cls += ' probe';
+        if(e.t==='guard-notfresh' && e.nr===r && e.nc===c) cls += ' bad';
+        if(e.t==='rot' && e.nr===r && e.nc===c) cls += ' newrot probe';
+        if((e.t==='pop'||e.t==='call'||e.t==='guard-oob'||e.t==='guard-notfresh'||e.t==='rot') && e.r===r && e.c===c && e.t!=='pop') cls += ' cur';
+      }
+      var sym = st.grid[r][c]===2 ? '🟫' : (st.grid[r][c]===1 ? '🟧' : '·');
+      html += '<div class="'+cls+'" data-r="'+r+'" data-c="'+c+'"><span class="rc">'+r+','+c+'</span>'+sym+'</div>';
+    }
+  }
+  els.cells.innerHTML = html;
+  els.gridhint.textContent = editable ? 'editable — click to cycle 0→1→2' : 'locked during replay';
+
+  // code highlight
+  for(var i=1;i<=PY.length;i++){
+    var el = document.getElementById('L'+i);
+    el.className = 'ln';
+  }
+  if(e){
+    var lines = e.lines || [e.line];
+    var guard = (e.t === 'guard-oob' || e.t === 'guard-notfresh');
+    lines.forEach(function(ln){
+      var el = document.getElementById('L'+ln);
+      if(!el) return;
+      el.className = 'ln ' + (guard ? 'guard' : (ln === e.line ? 'hl' : 'hl2'));
+    });
+    var main = document.getElementById('L'+e.line);
+    if(main && main.scrollIntoView) {
+      var box = codeEl.getBoundingClientRect(), lb = main.getBoundingClientRect();
+      if(lb.top < box.top || lb.bottom > box.bottom) main.scrollIntoView({block:'center'});
+    }
+  }
+
+  // stats
+  els.sFresh.textContent = st.fresh;
+  els.sLevel.textContent = st.level;
+  els.sPops.textContent = (st.pops === null) ? '–' : st.pops;
+  els.sQsz.textContent = st.q.length;
+
+  // queue chips with ring divider
+  if(st.q.length === 0){
+    els.qitems.innerHTML = '<span class="qempty">empty</span>';
+    els.qlegend.textContent = '';
+  } else {
+    var out = '', drew = false;
+    st.q.forEach(function(p,i){
+      if(st.pops !== null && i === divide && divide < st.q.length){
+        out += '<span class="qdiv">minute ' + (st.level+1) + ' ▸</span>'; drew = true;
+      }
+      out += '<span class="qchip ' + (i < divide ? 'this' : 'next') + '">(' + p[0] + ',' + p[1] + ')</span>';
+    });
+    els.qitems.innerHTML = out;
+    els.qlegend.innerHTML = (st.pops === null)
+      ? '<span style="color:var(--gold)">all seeds = minute 0 ring</span>'
+      : '<span style="color:var(--gold)">this minute</span> | <span style="color:var(--recurse)">next minute</span>';
+  }
+
+  // verdict
+  if(st.result === null){
+    els.verdict.className = 'verdict';
+    els.verdict.innerHTML = 'Return value: <b>—</b> (not finished yet)';
+  } else if(st.result === -1){
+    els.verdict.className = 'verdict bad';
+    els.verdict.innerHTML = 'Returns <b>-1</b> — the queue ran dry with ' + st.fresh + ' fresh orange(s) still unreachable.';
+  } else {
+    els.verdict.className = 'verdict ok';
+    els.verdict.innerHTML = 'Returns <b>' + st.result + '</b> — every orange rotted after ' + st.result + ' minute(s).';
+  }
+
+  // narration
+  if(e){
+    els.narr.innerHTML = '<span class="ev">' + e.t.toUpperCase() + '</span>' + esc(e.msg);
+  } else {
+    els.narr.innerHTML = '<span class="ev">READY</span>Press <b>Next</b> to start scanning the grid, or edit the grid first.';
+  }
+
+  // teaching callout for the fresh>0 early exit
+  if(e && e.t === 'loop-check' && e.freshExit){
+    els.callout.className = 'alert warn show';
+    els.callout.innerHTML = '<b>Teaching moment — the queue is NOT empty, yet the loop stops.</b> ' +
+      'The guard is <code>while q and fresh&gt;0</code>, not just <code>while q</code>. ' +
+      'fresh just hit 0, so every remaining cell in the queue has nothing fresh left to infect. ' +
+      'Popping them would burn work and, worse, would add a phantom <code>level += 1</code> and overcount the answer by one minute. ' +
+      'Stopping here is both faster and <em>necessary for correctness</em>.';
+  } else if(e && e.t === 'loop-check' && e.exit){
+    els.callout.className = 'alert info show';
+    els.callout.innerHTML = 'The queue is empty but <b>fresh = ' + st.fresh + '</b>. BFS reached everything it could reach; those oranges are walled off by empty cells. The final line returns <code>-1</code>.';
+  } else if(!e){
+    els.callout.className = 'alert';
+  }
+
+  els.note.textContent = (st.pops === null)
+    ? 'Before the loop: every chip in q is a starting source (minute 0).'
+    : 'Divider = the frozen len(q). Chips left of it still get popped this minute.';
+
+  els.stepc.textContent = 'step ' + app.idx + ' / ' + app.sim.events.length;
+  els.prev.disabled = (app.idx === 0);
+  els.next.disabled = (app.idx === app.sim.events.length);
+}
+
+/* ------- interaction ------- */
+els.cells.addEventListener('click', function(ev){
+  if(app.idx !== 0) return;
+  var t = ev.target.closest('.cell');
+  if(!t) return;
+  var r = +t.dataset.r, c = +t.dataset.c;
+  app.grid[r][c] = (app.grid[r][c] + 1) % 3;
+  rebuild();
+});
+els.next.addEventListener('click', function(){ pause(); stepFwd(); });
+els.prev.addEventListener('click', function(){ pause(); stepBack(); });
+els.reset.addEventListener('click', function(){ pause(); rebuild(); });
+els.preset.addEventListener('change', function(){
+  pause();
+  app.grid = PRESETS[+els.preset.value].grid.map(function(r){return r.slice();});
+  rebuild();
+});
+els.speed.addEventListener('input', function(){
+  app.speed = +els.speed.value;
+  els.speedv.textContent = app.speed + 'ms';
+  if(app.timer){ play(true); }
+});
+function play(restart){
+  if(app.timer) clearInterval(app.timer);
+  app.timer = setInterval(function(){
+    if(!stepFwd()) pause();
+  }, app.speed);
+  els.play.textContent = '❚❚ Pause';
+}
+function pause(){
+  if(app.timer){ clearInterval(app.timer); app.timer = null; }
+  els.play.textContent = '▶ Play';
+}
+els.play.addEventListener('click', function(){
+  if(app.timer) pause();
+  else { if(app.idx === app.sim.events.length) { app.st = initState(app.grid); app.idx = 0; render(); } play(); }
+});
+document.addEventListener('keydown', function(ev){
+  if(ev.key === 'ArrowRight'){ pause(); stepFwd(); ev.preventDefault(); }
+  else if(ev.key === 'ArrowLeft'){ pause(); stepBack(); ev.preventDefault(); }
+  else if(ev.key === ' '){ els.play.click(); ev.preventDefault(); }
+});
+
+rebuild();
+</script>
+</body>
+</html>

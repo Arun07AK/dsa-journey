@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graph Traversal Visualizer</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2431; --panel3:#222c3a;
+    --border:#2d3644; --text:#e6edf3; --dim:#8b95a5;
+    --accent:#7c9cff; --recurse:#58a6ff; --gold:#e3b341;
+    --inc:#3fb950; --exc:#8b95a5; --prune:#f85149; --success:#2ea043;
+    --mono:'SF Mono',ui-monospace,Menlo,Consolas,monospace;
+    --sans:'Segoe UI',system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.5;padding:0 0 60px}
+  a{color:var(--recurse)}
+  .wrap{max-width:1280px;margin:0 auto;padding:16px}
+  header h1{font-size:22px;margin:0 0 2px;letter-spacing:.3px}
+  header h1 span{color:var(--accent)}
+  .sub{color:var(--dim);font-size:13px;margin:0 0 12px}
+  .nav{font-size:12px;color:var(--dim);margin:0 0 12px}
+  .nav a{margin-right:12px}
+
+  /* intro */
+  details.intro{background:var(--panel);border:1px solid var(--border);border-radius:12px;margin-bottom:14px}
+  details.intro>summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none}
+  details.intro>summary::-webkit-details-marker{display:none}
+  details.intro>summary::before{content:'▸ ';color:var(--accent)}
+  details.intro[open]>summary::before{content:'▾ '}
+  .intro-body{padding:0 16px 16px;font-size:14px;color:#cdd6e0}
+  .intro-body h4{margin:16px 0 6px;color:var(--gold);font-size:13px;text-transform:uppercase;letter-spacing:.6px}
+  .introtpl{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:12px 14px;
+    font-family:var(--mono);font-size:12.5px;line-height:1.65;overflow-x:auto;margin:8px 0}
+  .introtpl .k{color:#ff7b72}.introtpl .f{color:#d2a8ff}.introtpl .c{color:var(--dim)}
+  .introtpl .n{color:var(--gold);font-weight:700}
+  .heartbeat{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+  .beat{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--mono);font-size:13px}
+  .beat b{color:var(--inc)}
+  .beat .x{color:var(--prune)}
+  .beat .r{color:var(--recurse)}
+  .startlist{margin:6px 0;padding-left:18px}
+  .startlist li{margin:5px 0}
+  .tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:6px;background:var(--panel3);border:1px solid var(--border);color:var(--dim);margin-left:4px}
+  .warn{color:var(--gold)}
+  .rule{background:var(--panel2);border:1px solid var(--border);border-left:4px solid var(--gold);
+    border-radius:9px;padding:12px 14px;margin:10px 0;font-size:14px}
+  .rule b{color:var(--gold)}
+  .breaks{background:var(--panel2);border:1px solid var(--border);border-left:4px solid var(--prune);
+    border-radius:9px;padding:12px 14px;margin:10px 0;font-size:13.5px}
+  .breaks b{color:var(--prune)}
+  table.tbl{width:100%;border-collapse:collapse;margin:8px 0;font-size:13px}
+  table.tbl th,table.tbl td{border:1px solid var(--border);padding:6px 9px;text-align:left;vertical-align:top}
+  table.tbl th{background:var(--panel3);color:var(--gold);font-size:11.5px;text-transform:uppercase;letter-spacing:.5px}
+  table.tbl code{font-size:12px}
+  .ok{color:var(--inc);font-weight:700}
+  .bad{color:var(--prune);font-weight:700}
+  code{background:var(--panel3);padding:1px 5px;border-radius:5px;font-family:var(--mono);font-size:12.5px}
+
+  /* tabs */
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+  .tab{background:var(--panel);border:1px solid var(--border);color:var(--dim);padding:8px 14px;border-radius:9px;cursor:pointer;font-size:13px;font-weight:600;transition:.15s}
+  .tab:hover{color:var(--text);border-color:var(--accent)}
+  .tab.active{background:var(--accent);color:#0b1020;border-color:var(--accent)}
+
+  /* controls */
+  .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:10px}
+  .btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600}
+  .btn:hover{border-color:var(--accent)}
+  .btn.primary{background:var(--accent);color:#0b1020;border-color:var(--accent)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .ctl-sep{width:1px;height:22px;background:var(--border)}
+  .speed{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--dim)}
+  .stepc{font-family:var(--mono);font-size:13px;color:var(--dim);margin-left:auto}
+  .variant{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--dim);flex-wrap:wrap}
+  .chip{background:var(--panel2);border:1px solid var(--border);color:var(--dim);padding:5px 10px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:600}
+  .chip:hover{color:var(--text);border-color:var(--accent)}
+  .chip.on{background:var(--accent);color:#0b1020;border-color:var(--accent)}
+  .chip.on.danger{background:var(--prune);border-color:var(--prune);color:#fff}
+
+  /* knobs */
+  .knobs-label{font-size:12px;color:var(--dim);margin:2px 0 6px}
+  .knobs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+  @media(max-width:900px){.knobs{grid-template-columns:1fr}}
+  .knob{background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:9px 11px;font-size:12.5px}
+  .knob .kl{color:var(--gold);font-size:11px;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px}
+  .knob .kv{font-family:var(--mono);font-size:12px;color:#cdd6e0}
+
+  /* alert strip under controls */
+  .alert{border-radius:9px;padding:10px 13px;margin-bottom:12px;font-size:13px;display:none}
+  .alert.show{display:block}
+  .alert.danger{background:rgba(248,81,73,.10);border:1px solid var(--prune);color:#ffc7c2}
+  .alert.info{background:rgba(124,156,255,.10);border:1px solid var(--accent);color:#cdd6e0}
+  .alert b{color:inherit}
+
+  /* panels */
+  .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:12px;align-items:start}
+  @media(max-width:1050px){.grid{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:11px;padding:11px 13px;margin-bottom:12px}
+  .panel h3{margin:0 0 8px;font-size:11.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--dim);font-weight:700}
+  .panel h3 .hint{float:right;text-transform:none;letter-spacing:0;font-weight:400;color:var(--dim);font-size:11px}
+
+  /* code */
+  pre.code{margin:0;font-family:var(--mono);font-size:12.5px;line-height:1.6;overflow-x:auto;max-height:420px;overflow-y:auto}
+  pre.code .ln{display:block;padding:0 8px;border-left:3px solid transparent;white-space:pre}
+  pre.code .ln.hl{background:rgba(227,179,65,.16);border-left-color:var(--gold)}
+  .cm{color:var(--dim)}.st{color:#a5d6ff}.nu{color:#79c0ff}.kw{color:#ff7b72}.bi{color:#79c0ff}.fn{color:#d2a8ff}
+
+  /* graph svg */
+  .graphwrap{overflow:auto}
+  svg.graph{display:block;width:100%;height:auto}
+  svg.graph .edge{stroke:#2d3644;stroke-width:2.5}
+  svg.graph .edge.tree{stroke:var(--inc);stroke-width:4}
+  svg.graph .edge.cross{stroke:var(--prune);stroke-width:4;stroke-dasharray:6 4}
+  svg.graph .edge.look{stroke:var(--gold);stroke-width:4}
+  svg.graph .node circle{fill:var(--panel2);stroke:#3d4757;stroke-width:2.5;transition:.18s}
+  svg.graph .node text{fill:var(--dim);font-family:var(--mono);font-size:15px;font-weight:700;text-anchor:middle;dominant-baseline:central;transition:.18s}
+  svg.graph .node.frontier circle{fill:#3a3418;stroke:var(--gold)}
+  svg.graph .node.frontier text{fill:var(--gold)}
+  svg.graph .node.done circle{fill:#12331d;stroke:var(--inc)}
+  svg.graph .node.done text{fill:var(--inc)}
+  svg.graph .node.current circle{fill:var(--gold);stroke:#fff;stroke-width:3.5}
+  svg.graph .node.current text{fill:#1a1400}
+  svg.graph .dlabel{fill:var(--recurse);font-family:var(--mono);font-size:11px;text-anchor:middle;font-weight:700}
+
+  /* frontier */
+  .fwrap{display:flex;align-items:center;gap:8px;min-height:60px;flex-wrap:wrap}
+  .fend{font-family:var(--mono);font-size:10.5px;color:var(--dim);text-align:center;line-height:1.25;min-width:42px}
+  .fend b{display:block;font-size:13px}
+  .fend.active{color:var(--gold)}
+  .fend.active b{color:var(--gold)}
+  .fitems{display:flex;gap:5px;flex-wrap:wrap;flex:1;min-height:34px;align-items:center}
+  .fitem{background:var(--panel3);border:1px solid var(--border);border-radius:7px;padding:5px 10px;
+    font-family:var(--mono);font-size:13px;font-weight:700;color:var(--text)}
+  .fitem.next{background:var(--gold);border-color:var(--gold);color:#1a1400}
+  .fitem.stale{opacity:.45;text-decoration:line-through}
+  .fitem .d{font-size:10px;color:var(--recurse);margin-left:3px}
+  .fitem.next .d{color:#5a4a00}
+  .fempty{color:var(--dim);font-family:var(--mono);font-size:12px}
+
+  /* sets */
+  .setrow{display:flex;gap:5px;flex-wrap:wrap;min-height:30px;align-items:center}
+  .pill{background:var(--panel3);border:1px solid var(--border);border-radius:7px;padding:4px 9px;
+    font-family:var(--mono);font-size:12.5px;font-weight:700}
+  .pill.seen{border-color:#2f5d3c;color:var(--inc)}
+  .pill.ord{border-color:#3d4d7a;color:var(--recurse)}
+  .pill .d{font-size:10px;color:var(--dim);margin-left:3px}
+
+  /* narration */
+  .narr{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--accent);
+    border-radius:9px;padding:11px 13px;margin-bottom:12px;font-size:13.5px;min-height:44px}
+  .narr b{color:var(--gold)}
+  .narr .ev{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.5px;
+    background:var(--panel3);border:1px solid var(--border);border-radius:5px;padding:1px 6px;
+    margin-right:7px;color:var(--dim)}
+
+  /* dual */
+  .dual{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:1050px){.dual{grid-template-columns:1fr}}
+  .dual .panel h3 .badge{font-size:10px;padding:1px 6px;border-radius:5px;margin-left:6px;background:var(--panel3);color:var(--dim)}
+  .verdict{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--inc);
+    border-radius:9px;padding:11px 13px;margin-top:12px;font-size:13.5px;color:#cdd6e0}
+  .hidden-block{display:none}
+  .kbdhint{font-size:11.5px;color:var(--dim);margin:-4px 0 12px}
+  .kbdhint kbd{background:var(--panel3);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-family:var(--mono);font-size:11px}
+
+  /* go-deeper sections (question-titled, collapsed by default) */
+  .deeper-label{font-size:11.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--dim);font-weight:700;margin:26px 0 8px}
+  details.learn{background:var(--panel);border:1px solid var(--border);border-radius:11px;margin-bottom:8px}
+  details.learn>summary{cursor:pointer;padding:11px 15px;font-weight:600;font-size:14px;list-style:none}
+  details.learn>summary::-webkit-details-marker{display:none}
+  details.learn>summary::before{content:'▸ ';color:var(--accent)}
+  details.learn[open]>summary::before{content:'▾ '}
+  details.learn>summary .tag{margin-left:8px}
+  .learn-body{padding:0 15px 14px;font-size:14px;color:#cdd6e0}
+  .learn-body h4{margin:14px 0 6px;color:var(--gold);font-size:13px;text-transform:uppercase;letter-spacing:.6px}
+
+  /* predict toggle + overlay */
+  .predict-toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--dim);user-select:none;cursor:pointer}
+  .predict{position:fixed;inset:0;background:rgba(5,8,13,.75);display:none;align-items:center;justify-content:center;z-index:50}
+  .predict.show{display:flex}
+  .predict-card{background:var(--panel);border:1px solid var(--accent);border-radius:16px;padding:22px 24px;max-width:440px;text-align:center}
+  .predict-card h3{margin:0 0 6px;font-size:18px}
+  .predict-card p{color:var(--dim);font-size:13px;margin:0 0 16px}
+  .predict-opts{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .popt{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:12px 20px;cursor:pointer;
+    font-family:var(--mono);font-size:18px;font-weight:700;min-width:56px;transition:.15s}
+  .popt:hover{border-color:var(--accent)}
+  .popt.correct{background:#12331d;border-color:var(--inc);color:var(--inc)}
+  .popt.wrong{background:rgba(248,81,73,.12);border-color:var(--prune);color:var(--prune)}
+  .predict-skip{margin-top:14px;font-size:12px;color:var(--dim);cursor:pointer}
+
+  /* self-check (prompt → attempt → reveal) */
+  .qa{background:var(--panel2);border:1px solid var(--border);border-radius:9px;margin:8px 0;overflow:hidden}
+  .qa .q{padding:11px 14px;font-size:13.5px;cursor:pointer;font-weight:600}
+  .qa .q::before{content:'？ ';color:var(--accent)}
+  .qa .a{display:none;padding:0 14px 12px;font-size:13.5px;color:#cdd6e0;border-top:1px dashed var(--border);padding-top:10px}
+  .qa.open .a{display:block}
+  .qa .a b{color:var(--gold)}
+  .selfcheck-hint{font-size:12.5px;color:var(--dim);margin:2px 0 10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><span>◆</span> Graph Traversal Visualizer</h1>
+    <p class="sub">BFS and DFS are the <b>same loop</b>. Watch the frontier — the container is the only knob.</p>
+    <p class="nav">
+      <a href="../backtracking/backtracking-visualizer.html">← Backtracking</a>
+      <a href="../sliding-window.html">Sliding Window</a>
+      <a href="../../STRATEGY.md">STRATEGY.md</a>
+      <a href="../../solved.md">solved.md</a>
+    </p>
+  </header>
+
+  <details class="intro" open>
+    <summary>Read me first — the one mental model (2 minutes)</summary>
+    <div class="intro-body">
+
+      <p><b>Every graph traversal is ONE loop.</b> Take a node out of a bag, mark it, put its neighbours in the bag. That's it. BFS, DFS, Dijkstra, A* and even Prim's MST are all <i>this same loop</i> — what changes is <b>which container the bag is</b>, and therefore which node comes out next.</p>
+
+      <h4>The universal template</h4>
+      <pre class="introtpl"><span class="k">def</span> <span class="f">traverse</span>(adj, start):
+    frontier = Container([start])      <span class="c"># <span class="n">①</span> deque | stack | heap</span>
+    seen = <span class="f">set</span>()
+    <span class="k">while</span> frontier:
+        node = frontier.pop()          <span class="c">#    popleft | pop | heappop</span>
+        <span class="k">if</span> node <span class="k">in</span> seen:               <span class="c"># <span class="n">③</span> mark on TAKE — always correct</span>
+            <span class="k">continue</span>
+        seen.add(node)
+        process(node)
+        <span class="k">for</span> nxt <span class="k">in</span> neighbours(node):   <span class="c"># <span class="n">②</span> adj list | grid 4-dirs</span>
+            frontier.push(nxt)</pre>
+
+      <p>This is Jeff Erickson's <i>"whatever-first search"</i> — he calls the container a <b>bag</b>, and notes that <i>a stack is a particular type of bag</i>. Learn this one loop and every tab below is it with one thing swapped.</p>
+
+      <h4>① The container is the difference</h4>
+      <div class="heartbeat">
+        <div class="beat"><b>deque.popleft()</b> &nbsp;→ oldest first &nbsp;→ <span class="r">BFS</span></div>
+        <div class="beat"><b>stack.pop()</b> &nbsp;→ newest first &nbsp;→ <span class="r">DFS</span></div>
+        <div class="beat"><b>heap.heappop()</b> &nbsp;→ cheapest first &nbsp;→ <span class="r">Dijkstra</span></div>
+      </div>
+      <p>Berkeley's CS188 puts the deep version in one line: <i>conceptually every frontier is a priority queue</i> — a stack and a queue are just the two cases where the ordering is so simple you can skip the log&nbsp;n.</p>
+
+      <p><b>But the knob is the container <i>and the key</i>.</b> "Min-heap → Dijkstra" is not quite true, and this trips people up later:</p>
+      <table class="tbl">
+        <tr><th>what the bag orders by</th><th>algorithm you get</th></tr>
+        <tr><td><code>insertion order</code></td><td>BFS (FIFO) / DFS (LIFO)</td></tr>
+        <tr><td><code>edge weight w(u,v)</code></td><td><b>Prim</b> — minimum spanning tree</td></tr>
+        <tr><td><code>dist[u] + w</code> (cumulative from source)</td><td><b>Dijkstra</b> — shortest path</td></tr>
+        <tr><td><code>dist[u] + w + h(v)</code></td><td><b>A*</b> — Dijkstra biased toward the goal</td></tr>
+      </table>
+      <p>So the real knob is <b>(container, key, when-you-finalise)</b>. Set A*'s heuristic to 0 and it collapses to Dijkstra; make every weight 1 and Dijkstra collapses to BFS. It's one ladder, not five algorithms.</p>
+
+      <h4>The analogy</h4>
+      <p>You're searching a building. <b>BFS</b> = a crowd steps forward one room at a time — a ripple spreading out evenly. <b>DFS</b> = one scout sprints down a corridor as far as it goes, then backs up and tries the next turn. Same rulebook, different waiting room. The scout is the one you already met in the <a href="../backtracking/backtracking-visualizer.html">backtracking visualizer</a> — <b>recursive DFS is this loop with the call stack as the container</b>: every call pushes a frame, every return pops one.</p>
+
+      <p style="margin-top:14px"><b>That's the whole mental model.</b> Knob ② (<code>neighbours()</code> — the only per-problem code) and knob ③ (when you mark) you'll meet <i>live</i> in the tabs — flip the mode chips and watch what each choice does. The full write-ups, costs, and where this model breaks are in <b>Go deeper</b> below the visualizer — open each one <i>after</i> you've stepped the tab it explains.</p>
+    </div>
+  </details>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div class="controls">
+    <div class="variant hidden-block" id="variantArea"></div>
+    <div class="ctl-sep"></div>
+    <button class="btn" id="btnReset">⏮ Reset</button>
+    <button class="btn" id="btnPrev">◀ Prev</button>
+    <button class="btn primary" id="btnPlay">▶ Play</button>
+    <button class="btn" id="btnNext">Next ▶</button>
+    <div class="speed">speed <input type="range" id="speed" min="120" max="1400" value="620" step="20"></div>
+    <div class="ctl-sep"></div>
+    <label class="predict-toggle" title="Before each pop, commit to a guess first"><input type="checkbox" id="predictToggle"> 🔮 Predict next pop</label>
+    <div class="stepc" id="stepc">0 / 0</div>
+  </div>
+  <p class="kbdhint"><kbd>→</kbd>/<kbd>Space</kbd> step · <kbd>←</kbd> back · <kbd>R</kbd> reset</p>
+
+  <div class="alert" id="alert"></div>
+
+  <div class="knobs-label">Same universal template — this mode just fills in the <b>3 knobs</b>:</div>
+  <div class="knobs" id="knobsPanel"></div>
+
+  <!-- SINGLE VIEW -->
+  <div id="singleView">
+    <div class="narr" id="narr"></div>
+    <div class="grid">
+      <div>
+        <div class="panel">
+          <h3>Code <span class="hint">the highlighted line is executing</span></h3>
+          <pre class="code" id="code"></pre>
+        </div>
+        <div class="panel">
+          <h3>Frontier <span class="hint" id="fhint"></span></h3>
+          <div class="fwrap">
+            <div class="fend" id="fleft"><b>◀</b>FRONT</div>
+            <div class="fitems" id="fitems"></div>
+            <div class="fend" id="fright"><b>▶</b>BACK</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="panel">
+          <h3>Graph <span class="hint">green edge = discovered-through (the traversal tree)</span></h3>
+          <div class="graphwrap"><svg class="graph" id="graph" viewBox="0 0 700 440"></svg></div>
+        </div>
+        <div class="panel">
+          <h3>Seen</h3>
+          <div class="setrow" id="seenRow"></div>
+        </div>
+        <div class="panel">
+          <h3>Visit order</h3>
+          <div class="setrow" id="orderRow"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DUAL VIEW -->
+  <div id="dualView" class="hidden-block">
+    <div class="narr" id="dNarr"></div>
+    <div class="dual">
+      <div>
+        <div class="panel"><h3>BFS <span class="badge">queue · FIFO</span></h3>
+          <div class="graphwrap"><svg class="graph" id="dGraphA" viewBox="0 0 700 440"></svg></div></div>
+        <div class="panel"><h3>Frontier <span class="hint">pops from the FRONT</span></h3>
+          <div class="fwrap"><div class="fend active"><b>◀</b>FRONT</div><div class="fitems" id="dFitemsA"></div><div class="fend"><b>▶</b>BACK</div></div></div>
+        <div class="panel"><h3>Visit order</h3><div class="setrow" id="dOrderA"></div></div>
+      </div>
+      <div>
+        <div class="panel"><h3>DFS <span class="badge">stack · LIFO</span></h3>
+          <div class="graphwrap"><svg class="graph" id="dGraphB" viewBox="0 0 700 440"></svg></div></div>
+        <div class="panel"><h3>Frontier <span class="hint">pops from the BACK</span></h3>
+          <div class="fwrap"><div class="fend"><b>◀</b>FRONT</div><div class="fitems" id="dFitemsB"></div><div class="fend active"><b>▶</b>BACK</div></div></div>
+        <div class="panel"><h3>Visit order</h3><div class="setrow" id="dOrderB"></div></div>
+      </div>
+    </div>
+    <div class="verdict">
+      <b>Same graph. Same loop. Same <code>neighbours()</code>.</b> The only difference between the two columns is which end of the container gets popped — and that alone decides whether you sweep outward in shells or dive down a corridor. BFS's order is also its distance order, which is why it and only it solves "fewest steps."
+    </div>
+  </div>
+
+  <!-- ============ GO DEEPER — one question per section, open AFTER stepping the tab ============ -->
+  <div class="deeper-label">Go deeper — open each after you've stepped the tab it explains</div>
+
+  <details class="learn" id="deep-mark">
+    <summary>③ When do you mark — and why does it depend on the container? <span class="tag">after the BFS + DFS chips</span></summary>
+    <div class="learn-body">
+      <div class="rule">
+        <b>The rule that never becomes wrong:</b> finalising a node when you <b>REMOVE</b> it from the frontier is always correct. Finalising it when you <b>INSERT</b> it is an <i>optimisation</i> — valid only when insertion order already equals final order.
+      </div>
+      <p>Unit weights (BFS) satisfy that condition. Weighted edges (Dijkstra) do not. Everything else follows:</p>
+      <table class="tbl">
+        <tr><th>container</th><th>finalise when</th><th>why</th></tr>
+        <tr>
+          <td><b>queue → BFS</b></td>
+          <td><span class="ok">push</span> <span class="tag">safe shortcut</span></td>
+          <td>The queue only ever holds two adjacent distance values, in nondecreasing order (CLRS Lemma 22.3) — so the first time you reach a vertex you reached it optimally. Marking at push caps the queue at Θ(V), each vertex enqueued exactly once.</td>
+        </tr>
+        <tr>
+          <td><b>stack → DFS</b></td>
+          <td><span class="bad">pop</span> <span class="tag">required</span></td>
+          <td>Marking on push still visits every reachable vertex, but <b>the result is not a depth-first search</b> — a node high in the tree claims neighbours as children too early. Cost of doing it right: duplicates on the stack.</td>
+        </tr>
+        <tr>
+          <td><b>heap → Dijkstra</b></td>
+          <td><span class="bad">pop</span> <span class="tag">required</span></td>
+          <td>A tentative distance can still improve while the node sits in the heap, so marking at push would freeze a non-final answer. Lazy Dijkstra deliberately pushes duplicates and skips stale ones on extraction.</td>
+        </tr>
+      </table>
+      <p><b class="warn">⚠ And here's where almost every interview-prep source gets it wrong.</b> You'll be told <i>"marking on dequeue gives wrong BFS distances."</i> <b>That's false.</b> Mark-on-pop BFS is <i>correct</i> and still O(V+E) — each vertex expands at most once, so pushes stay bounded by 2E. What it actually costs is <b>space: Θ(E) instead of Θ(V)</b>.</p>
+      <p>The bug people are really describing is a different one that happens to co-occur: writing <code>dist[v] = dist[u] + 1</code> <i>at push time, unguarded</i>, so a later longer push overwrites a shorter distance. On the graph above, that bug reports <code>C</code> at distance 2 when it's really 1. Learn it as <b>where you WRITE the distance</b>, not where you mark. The BFS tab's third chip is exactly this bug — watch it happen.</p>
+      <p><b>The ordering detail:</b> iterative DFS reproduces recursive DFS's visit order only if you push neighbours in <b>reversed</b> order. Push <code>D, C, B</code> so that <code>B</code> pops first. Without the reversal you still get a valid DFS — just a mirrored one.</p>
+    </div>
+  </details>
+
+  <details class="learn" id="deep-shells">
+    <summary>Why does BFS give shortest paths — and DFS doesn't? <span class="tag">after the BFS tab</span></summary>
+    <div class="learn-body">
+      <p>The queue is always sorted by nondecreasing distance, and its largest and smallest values differ by at most 1 — you only ever append <code>d+1</code> while popping <code>d</code>, so the invariant survives every iteration. Therefore BFS dequeues vertices in nondecreasing order of distance, and every vertex at distance <i>k</i> is discovered before any vertex at distance <i>k+1</i> is expanded. The first time you touch a vertex, you touched it from the closest shell that reaches it — so that distance is optimal.</p>
+      <p><b>BFS sweeps outward in complete shells</b>, and the queue is the boundary between the finished shell and the next one. Note the real precondition is <i>unit</i> edge weights, not "unweighted" — a graph where every edge costs 7 is fine too (you just get 7·δ). The moment weights differ, the shell structure breaks and you need the heap.</p>
+    </div>
+  </details>
+
+  <details class="learn" id="deep-breaks">
+    <summary>Where does the one-loop model genuinely break? <span class="tag">worth knowing now</span></summary>
+    <div class="learn-body">
+      <div class="breaks">
+        <p style="margin:0 0 8px"><b>The bag loop gives you preorder only.</b> When you pop <code>v</code> you push all its neighbours and never come back to <code>v</code> — so there is no notion of <i>"finished with v."</i> No finish times, no low-link values, no postorder.</p>
+        <p style="margin:0">That means you <b>cannot</b> get topological-sort-by-finish-time, Tarjan's SCC, or back-edge cycle detection out of the plain loop. Those need three states — <code>New</code> / <code>Active</code> / <code>Done</code> — not one mark bit, and iterating them needs a two-phase stack (<code>push (v, ENTER)</code> / <code>(v, EXIT)</code>), at which point it honestly isn't the same while-loop any more. <b>Course Schedule (LC 207) is the counterexample to everything on this page</b>, and that's fine — knowing where a model stops is part of owning it.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="learn" id="deep-cost">
+    <summary>What does it cost — and when does recursion blow the stack? <span class="tag">after the DFS recursive chip</span></summary>
+    <div class="learn-body">
+      <p>Each vertex is marked at most once, so the neighbour loop runs at most V times. <b>Each undirected edge <code>uv</code> enters the bag exactly twice</b> — once as <code>(u,v)</code>, once as <code>(v,u)</code> — so the push line runs at most 2E times. That's where "twice for undirected" actually comes from.</p>
+      <ul class="startlist">
+        <li><b>Adjacency list:</b> <code>O(V + E)</code> for both BFS and DFS — and <code>O(E)</code> for a connected graph, since V ≤ E+1.</li>
+        <li><b>Adjacency matrix:</b> listing one vertex's neighbours costs O(V) no matter its degree → <b>O(V²) even on a sparse graph.</b> You cannot recover O(V+E). Space Θ(V²) vs Θ(V+E).</li>
+        <li><b>Grids are implicit graphs</b> — neighbours are computed, never stored. V = mn, E ≈ 2mn, so <code>O(mn)</code>.</li>
+        <li><b>Space differs, and it decides which one breaks:</b> BFS is O(w), the widest frontier; DFS is O(h), the deepest path. A wide graph blows up BFS; a deep chain blows up DFS.</li>
+      </ul>
+      <h4>Recursion depth — the real numbers</h4>
+      <p>Python's default recursion limit is 1000 (usable depth ~997). <b>Number of Islands allows a 300×300 grid = 90,000 cells</b>, and a recursive flood fill on all-land hits depth 90,000 — <b>90× over the limit</b>. That's a guaranteed <code>RecursionError</code>, not a theoretical worry.</p>
+      <p>But don't repeat the folklore that raising the limit segfaults: that was true through Python 3.11, and 3.12 changed the model so the limit applies only to Python-level frames (200,000 deep runs fine on 3.13). It's version- and platform-dependent — and since you don't control the judge's version, <i>that uncertainty is itself the argument</i>. It isn't Python-only either: the JVM's default thread stack is roughly 10–20k frames.</p>
+      <p><b>The honest recommendation:</b> default to <b>iterative BFS</b> on grids. Not because recursion is broken, but because BFS's queue only ever holds the frontier — O(min(m,n)) — while iterative DFS with mark-on-pop can hold Θ(E). It's the only version whose memory you can reason about without knowing the judge's language version.</p>
+    </div>
+  </details>
+
+  <details class="learn" id="deep-spot">
+    <summary>② How do you spot the graph in a LeetCode problem? <span class="tag">before you go solve</span></summary>
+    <div class="learn-body">
+      <p><code>neighbours()</code> is the only per-problem code. Erickson's three questions, in this order: <i>What are the vertices? What are the edges? What problem is this?</i></p>
+      <table class="tbl">
+        <tr><th>problem</th><th>node</th><th>edge</th><th>traversal</th></tr>
+        <tr><td>Number of Islands (200)</td><td>a land cell</td><td>4-adjacency</td><td>either — count flood-fill launches</td></tr>
+        <tr><td>Rotting Oranges (994)</td><td>a cell</td><td>4-adjacency</td><td><b>BFS only</b> — multi-source, seed every rotten cell at level 0</td></tr>
+        <tr><td>Course Schedule (207)</td><td>a course</td><td><code>b → a</code> for <code>[a,b]</code></td><td>Kahn's BFS on in-degrees, or DFS with <b>3 states</b></td></tr>
+        <tr><td>Word Ladder (127)</td><td>a word</td><td>differs by one letter</td><td>BFS</td></tr>
+        <tr><td>Clone Graph (133)</td><td>given node</td><td>given neighbours</td><td>either — <code>visited</code> is a <code>map&lt;old,new&gt;</code> that doubles as the memo</td></tr>
+        <tr><td>Open the Lock (752)</td><td>a 4-digit state</td><td>one wheel, one click</td><td>BFS — nothing is ever stored; neighbours are arithmetic</td></tr>
+      </table>
+      <ul class="startlist">
+        <li><b>200 vs 994 is the sharpest pair.</b> <i>Identical</i> node/edge mapping. 200 asks "how many components" (either traversal works); 994 asks "how many rounds" (BFS only). Same graph, different container — that pair <i>is</i> this whole page.</li>
+        <li><b>Word Search (79) is DFS with undo</b> — you un-mark on the way out. That's exactly Choose → Explore → <span style="color:var(--prune)">Unchoose</span> from the backtracking tool.</li>
+        <li><b>127's real difficulty is building the edges</b>, not traversing them: naive all-pairs is O(N²L) ≈ 250M operations; the wildcard-bucket trick (<code>h*t</code>) makes it O(N·L²).</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="learn" id="deep-resources">
+    <summary>Start here — fact-checked resources <span class="tag">8 picks</span></summary>
+    <div class="learn-body">
+      <ul class="startlist">
+        <li><b>Intuition, and the best on this list:</b> <a href="https://www.redblobgames.com/pathfinding/a-star/introduction.html" target="_blank" rel="noopener">Red Blob Games — Introduction to A*</a>. The only major intro <i>built around</i> the frontier-swap idea, with something to poke every few sentences. Its companion <a href="https://www.redblobgames.com/pathfinding/a-star/implementation.html" target="_blank" rel="noopener">Implementation of A*</a> writes BFS, Dijkstra and A* as one <code>frontier</code> loop. <span class="tag">free</span></li>
+        <li><b>The textbook source for this exact model:</b> <a href="https://courses.grainger.illinois.edu/cs473/fa2013/notes/17-graphs.pdf" target="_blank" rel="noopener">Erickson, <i>Algorithms</i> — Lecture 17</a> (whatever-first search, the bag, every complexity bound above) and <a href="https://courses.grainger.illinois.edu/cs473/fa2013/notes/18-dfs.pdf" target="_blank" rel="noopener">Lecture 18</a> (DFS-tree lemmas, New/Active/Done). <span class="tag">free PDF</span></li>
+        <li><b>The thesis in one post:</b> <a href="https://johnazariah.github.io/2026/02/08/one-loop-to-traverse-them-all.html" target="_blank" rel="noopener">One Loop to Traverse Them All</a> — the bag→algorithm table, including Prim. <span class="tag">free</span></li>
+        <li><b>Interview-shaped map:</b> <a href="https://blog.algomaster.io/p/master-graph-algorithms-for-coding" target="_blank" rel="noopener">AlgoMaster — Master Graph Algorithms for Coding Interviews</a> (10 patterns, each with LeetCode problems), plus <a href="https://algomaster.io/learn/dsa/graphs-introduction" target="_blank" rel="noopener">Introduction to Graphs</a> / <a href="https://algomaster.io/learn/dsa/bfs-introduction" target="_blank" rel="noopener">BFS</a> / <a href="https://algomaster.io/learn/dsa/dfs-introduction" target="_blank" rel="noopener">DFS</a>. <span class="warn">Note: these teach BFS and DFS as two separate algorithms.</span></li>
+        <li><b>When you need it precise:</b> <a href="https://cp-algorithms.com/graph/breadth-first-search.html" target="_blank" rel="noopener">cp-algorithms — BFS</a>, <a href="https://cp-algorithms.com/graph/dijkstra_sparse.html" target="_blank" rel="noopener">Dijkstra on sparse graphs</a> (the lazy <code>if d_v != d[v]: continue</code>), <a href="https://cp-algorithms.com/graph/01_bfs.html" target="_blank" rel="noopener">0-1 BFS</a> — the cleanest proof that the container is the knob. <span class="tag">free</span></li>
+        <li><b>Watch:</b> <a href="https://www.youtube.com/watch?v=tWVWeAqZ0WU" target="_blank" rel="noopener">Graph Algorithms for Technical Interviews — Full Course</a> (freeCodeCamp, ~2h). NeetCode has no single graph course video — use his per-problem videos afterwards, e.g. <a href="https://www.youtube.com/watch?v=pV2kpPD66nE" target="_blank" rel="noopener">Number of Islands</a>. <span class="tag">video</span></li>
+        <li><b>Play:</b> <a href="https://qiao.github.io/PathFinding.js/visual/" target="_blank" rel="noopener">PathFinding.js</a> — draw walls, swap the algorithm, watch the frontier's <i>shape</i> change. Then <a href="https://visualgo.net/en/dfsbfs" target="_blank" rel="noopener">VisuAlgo</a> to draw a real node-link graph. <span class="tag">tool</span></li>
+      </ul>
+      <p style="margin-top:8px"><b>Flow:</b> read Red Blob → step all three tabs here, flipping the mark-timing chips → then Number of Islands and Rotting Oranges back to back, and notice you only changed the container. <span class="tag">STRATEGY.md pattern #8 · 20–25 problems</span></p>
+    </div>
+  </details>
+
+  <!-- ============ SELF-CHECK — attempt before revealing ============ -->
+  <div class="deeper-label">Blurt it back — say your answer out loud, <i>then</i> click to check</div>
+  <p class="selfcheck-hint">If you can't answer one, don't re-read the intro — go step the tab that teaches it, then come back.</p>
+
+  <div class="qa"><div class="q">Write the universal traversal loop from memory — all 3 knobs.</div>
+    <div class="a"><code>frontier = Container([start])</code> · <code>seen = set()</code> · while frontier: <code>pop</code> → if seen, skip → mark → for each neighbour: <code>push</code>. The knobs: <b>① which container</b>, <b>② neighbours()</b>, <b>③ when you mark</b>. If your version marked at push unconditionally — that's only safe for BFS.</div></div>
+
+  <div class="qa"><div class="q">What container — and keyed by <i>what</i> — gives you Dijkstra? Prim? A*?</div>
+    <div class="a">All three are a min-heap; <b>the key is the real knob</b>. Keyed by <b>edge weight w(u,v)</b> → Prim. Keyed by <b>dist[u] + w</b> (cumulative from source) → Dijkstra. Keyed by <b>dist[u] + w + h(v)</b> → A*. Set h = 0 and A* collapses to Dijkstra; make every weight 1 and Dijkstra collapses to BFS.</div></div>
+
+  <div class="qa"><div class="q">When is mark-on-push safe, and what's the one rule that never becomes wrong?</div>
+    <div class="a"><b>Finalise on REMOVE is always correct.</b> Finalising on insert is an optimisation, valid only when insertion order = final order — true for BFS (unit weights), false for DFS (wrong tree) and Dijkstra (freezes a non-final distance).</div></div>
+
+  <div class="qa"><div class="q">"Marking on dequeue gives wrong BFS distances." True or false — and what's the real bug?</div>
+    <div class="a"><b>False.</b> Mark-on-pop BFS is correct, still O(V+E); it costs <b>Θ(E) space instead of Θ(V)</b>. The real bug is writing <code>dist[v] = dist[u]+1</code> <i>at push time, unguarded</i>, letting a longer path overwrite a shorter one. It's about where you <b>write</b>, not where you mark.</div></div>
+
+  <div class="qa"><div class="q">Why does BFS give shortest paths, in one sentence?</div>
+    <div class="a">The queue is always sorted by nondecreasing distance (you only append <code>d+1</code> while popping <code>d</code>), so the first time you reach a vertex you reached it from the closest shell — <b>discovery order = distance order</b>.</div></div>
+
+  <div class="qa"><div class="q">Name one problem the bag loop <i>cannot</i> solve, and why.</div>
+    <div class="a"><b>Course Schedule (LC 207)</b> — cycle detection by finish times. The bag loop is preorder-only: once you pop <code>v</code> you never come back, so there's no "finished with v", no postorder, no low-links. You need <code>New/Active/Done</code> and a two-phase stack — a genuinely different loop.</div></div>
+
+  <p style="margin-top:16px;color:var(--dim);font-size:12.5px"><i>One note on honesty: every empirical claim on this page — the mark-on-push DFS tree being wrong, mark-on-pop BFS distances being right, the unguarded-distance bug — was verified against reference implementations on the exact graph in the tabs above, not taken from a blog post.</i></p>
+</div>
+
+<!-- predict overlay -->
+<div class="predict" id="predictOverlay">
+  <div class="predict-card">
+    <h3>🔮 Which node pops next?</h3>
+    <p id="predictHint">Look at the frontier and the container policy — commit before you peek.</p>
+    <div class="predict-opts" id="predictOpts"></div>
+    <div class="predict-skip" id="predictSkip">skip prediction →</div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   Graph Traversal Visualizer
+   Architecture mirrors backtracking-visualizer.html:
+   record, then replay. Each tracer runs the REAL algorithm once
+   and emits a flat events[] array carrying a full state snapshot,
+   so prev() is just idx--. The SVG is laid out once; stepping
+   only toggles classes.
+   Every claim this page makes was verified against reference
+   implementations on this exact graph before shipping.
+   ============================================================ */
+
+// ---------- the seed graph ----------
+// Core A:[B,C], B:[A,C,D] is the minimal structure where mark-on-push
+// diverges from real DFS. G is isolated on purpose: disconnected components.
+const NODES = [
+  {id:'A', x:300, y:52 },
+  {id:'B', x:170, y:152},
+  {id:'C', x:432, y:152},
+  {id:'D', x:112, y:266},
+  {id:'E', x:112, y:380},
+  {id:'F', x:492, y:266},
+  {id:'G', x:622, y:380},
+];
+const EDGES = [['A','B'],['A','C'],['B','C'],['B','D'],['D','E'],['C','F']];
+const ADJ = (()=>{
+  const a = {}; NODES.forEach(n=>a[n.id]=[]);
+  EDGES.forEach(([u,v])=>{ a[u].push(v); a[v].push(u); });
+  for(const k in a) a[k].sort();
+  return a;
+})();
+const START = 'A';
+const ekey = (u,v) => u<v ? u+'-'+v : v+'-'+u;
+
+// ---------- syntax highlighter (from backtracking-visualizer) ----------
+const KW = ['def','for','in','if','not','while','return','continue','from','import','else','and','or'];
+const BI = ['set','len','range','reversed','deque','list','print'];
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function hlLine(raw){
+  if(raw === '') return '';
+  let s = esc(raw), out = '', ci = s.indexOf('#');
+  let codePart = ci >= 0 ? s.slice(0,ci) : s;
+  let comment  = ci >= 0 ? s.slice(ci)   : '';
+  codePart = codePart.replace(/\b\d+\b/g, m=>`<span class="nu">${m}</span>`);
+  codePart = codePart.replace(/\b[A-Za-z_]\w*\b/g, m=>{
+    if(KW.includes(m)) return `<span class="kw">${m}</span>`;
+    if(BI.includes(m)) return `<span class="bi">${m}</span>`;
+    return m;
+  });
+  codePart = codePart.replace(/(<span class="kw">def<\/span>\s+)([A-Za-z_]\w*)/,
+    (m,a,b)=>`${a}<span class="fn">${b}</span>`);
+  out = codePart + (comment ? `<span class="cm">${comment}</span>` : '');
+  return out;
+}
+
+// ---------- code listings ----------
+const CODE = {};
+CODE.bfs = [
+"from collections import deque",
+"",
+"def bfs(adj, start):",
+"    frontier = deque([start])      # 1  QUEUE -> pop the FRONT",
+"    seen = {start}                 # 3  mark on PUSH (safe here)",
+"    order = []",
+"    while frontier:",
+"        node = frontier.popleft()  #    oldest first",
+"        order.append(node)",
+"        for nxt in adj[node]:      # 2  neighbours",
+"            if nxt not in seen:",
+"                seen.add(nxt)",
+"                frontier.append(nxt)",
+"    return order",
+];
+CODE.bfsPop = [
+"from collections import deque",
+"",
+"def bfs(adj, start):",
+"    frontier = deque([(start, 0)]) # 1  QUEUE -> pop the FRONT",
+"    dist = {}                      # 3  mark on POP  (also correct!)",
+"    order = []",
+"    while frontier:",
+"        node, d = frontier.popleft()",
+"        if node in dist:           #    skip the duplicates",
+"            continue",
+"        dist[node] = d             #    distance CARRIED, not written early",
+"        order.append(node)",
+"        for nxt in adj[node]:",
+"            if nxt not in dist:",
+"                frontier.append((nxt, d + 1))",
+"    return order",
+];
+CODE.bfsBug = [
+"from collections import deque",
+"",
+"def bfs(adj, start):               # !! the bug people MEAN",
+"    frontier = deque([start])",
+"    dist = {start: 0}",
+"    seen = set()",
+"    while frontier:",
+"        node = frontier.popleft()",
+"        if node in seen:",
+"            continue",
+"        seen.add(node)",
+"        for nxt in adj[node]:",
+"            if nxt not in seen:",
+"                dist[nxt] = dist[node] + 1   # !! written at PUSH, unguarded",
+"                frontier.append(nxt)         #    a later, LONGER push overwrites",
+"    return dist",
+];
+CODE.dfs = [
+"def dfs(adj, start):",
+"    frontier = [start]             # 1  STACK -> pop the BACK",
+"    seen = set()",
+"    order = []",
+"    while frontier:",
+"        node = frontier.pop()      #    newest first",
+"        if node in seen:           # 3  mark on POP (REQUIRED for DFS)",
+"            continue",
+"        seen.add(node)",
+"        order.append(node)",
+"        for nxt in reversed(adj[node]):  # reversed -> matches recursion",
+"            frontier.append(nxt)",
+"    return order",
+];
+CODE.dfsPush = [
+"def dfs(adj, start):               # !! this is NOT a DFS",
+"    frontier = [start]",
+"    seen = {start}",
+"    order = []",
+"    while frontier:",
+"        node = frontier.pop()",
+"        order.append(node)",
+"        for nxt in reversed(adj[node]):",
+"            if nxt not in seen:",
+"                seen.add(nxt)      # !! marked too early - steals the child",
+"                frontier.append(nxt)",
+"    return order",
+];
+CODE.dfsRec = [
+"def dfs(adj, start):",
+"    seen = set()",
+"    order = []",
+"",
+"    def go(node):                  # 1  the CALL STACK is the container",
+"        seen.add(node)",
+"        order.append(node)",
+"        for nxt in adj[node]:      # 2  neighbours",
+"            if nxt not in seen:",
+"                go(nxt)            #    push a frame / pop on return",
+"",
+"    go(start)",
+"    return order",
+];
+
+// ---------- tracers ----------
+// Every tracer emits: {type, line, narr, node, frontier, seen, order, tree, look, cross}
+function mkEmit(events){
+  return (type, line, narr, st) => events.push(Object.assign({type, line, narr}, st));
+}
+const fmt = a => a.length ? a.join(', ') : '∅';
+
+function traceBFS(){
+  const events=[], emit=mkEmit(events);
+  const seen=new Set([START]), order=[], tree=[], dist={[START]:0};
+  let q=[START];
+  const snap=(extra)=>Object.assign({frontier:q.map(n=>({n,d:dist[n]})), seen:[...seen], order:[...order], tree:[...tree]}, extra||{});
+  emit('INIT',3,`<b>frontier = deque([A])</b> — the container is a <b>queue</b>, so we always pop the <b>front</b>. Marking <code>A</code> as seen right now, at push time.`, snap());
+  while(q.length){
+    const node=q[0];
+    emit('POP',7,`<b>popleft()</b> → <b>${node}</b> (distance ${dist[node]}). The oldest thing in the queue — that's the whole of BFS.`, Object.assign(snap(),{node,current:node}));
+    q=q.slice(1); order.push(node);
+    emit('VISIT',8,`Recorded <b>${node}</b>. Visit order is now [${fmt(order)}] — and because the queue stays sorted by distance, <i>this is also distance order</i>.`, Object.assign(snap(),{node,current:node}));
+    for(const nxt of ADJ[node]){
+      if(!seen.has(nxt)){
+        seen.add(nxt); dist[nxt]=dist[node]+1; tree.push(ekey(node,nxt)); q=q.concat([nxt]);
+        emit('PUSH',12,`<b>${nxt}</b> is new → mark it seen <i>now</i> and append to the <b>back</b>. Distance ${dist[nxt]}, first time we touched it, so that distance is already final.`,
+          Object.assign(snap(),{node,current:node,look:ekey(node,nxt)}));
+      } else {
+        emit('SKIP',10,`<b>${nxt}</b> is already seen — skip. This is the check that stops the queue from filling with duplicates.`,
+          Object.assign(snap(),{node,current:node,look:ekey(node,nxt)}));
+      }
+    }
+  }
+  emit('DONE',13,`Queue empty. Visited <b>${order.length}</b> of ${NODES.length} nodes — <b>G was never reached</b>, because it's in a different component. One traversal only ever explores one component; counting components needs an outer loop over every node.`, snap());
+  return {events, dist};
+}
+
+function traceBFSPop(){
+  const events=[], emit=mkEmit(events);
+  const dist={}, order=[], tree=[];
+  let q=[{n:START,d:0,from:null}];
+  const snap=e=>Object.assign({frontier:q.map(x=>({n:x.n,d:x.d,stale:x.n in dist})), seen:Object.keys(dist), order:[...order], tree:[...tree]}, e||{});
+  emit('INIT',3,`Same queue — but now nothing is marked at push time. We carry the distance <i>inside the queue entry</i> and finalise it on the way out.`, snap());
+  while(q.length){
+    const {n:node,d,from}=q[0];
+    emit('POP',7,`<b>popleft()</b> → <b>${node}</b> carrying distance ${d}.`, Object.assign(snap(),{node,current:node}));
+    q=q.slice(1);
+    if(node in dist){
+      emit('STALE',8,`<b>${node}</b> is already finalised at distance ${dist[node]} — this is a <b>duplicate</b>. Skip it. This is the cost of mark-on-pop: extra entries, Θ(E) space instead of Θ(V). It is <i>not</i> a correctness bug.`, Object.assign(snap(),{node}));
+      continue;
+    }
+    dist[node]=d; order.push(node); if(from) tree.push(ekey(from,node));
+    emit('VISIT',10,`Finalise <b>${node} = ${d}</b>. Because the queue is still monotone in distance, the first pop of a node always carries its minimum — so these distances are <b>identical</b> to mark-on-push.`, Object.assign(snap(),{node,current:node}));
+    for(const nxt of ADJ[node]){
+      if(!(nxt in dist)){
+        q=q.concat([{n:nxt,d:d+1,from:node}]);
+        emit('PUSH',14,`Push <b>${nxt}</b> with distance ${d+1} attached. Note we push it even if it's already queued — hence the duplicates.`, Object.assign(snap(),{node,current:node,look:ekey(node,nxt)}));
+      }
+    }
+  }
+  emit('DONE',15,`Done. Compare the distances with the <b>mark on push</b> chip: <b>they are the same</b>. The folklore that mark-on-pop breaks BFS distances is simply wrong — it costs space, not correctness.`, snap());
+  return {events, dist};
+}
+
+function traceBFSBug(){
+  const events=[], emit=mkEmit(events);
+  const dist={[START]:0}, seen=new Set(), order=[], tree=[];
+  let q=[START];
+  const snap=e=>Object.assign({frontier:q.map(n=>({n,d:dist[n]})), seen:[...seen], order:[...order], tree:[...tree]}, e||{});
+  emit('INIT',4,`<b>The real bug.</b> Distance is written at <i>push</i> time with no guard — so a later, longer path can overwrite a shorter one.`, snap());
+  while(q.length){
+    const node=q[0];
+    emit('POP',7,`popleft() → <b>${node}</b>.`, Object.assign(snap(),{node,current:node}));
+    q=q.slice(1);
+    if(seen.has(node)){ emit('STALE',9,`<b>${node}</b> already expanded — skip.`, Object.assign(snap(),{node})); continue; }
+    seen.add(node); order.push(node);
+    emit('VISIT',10,`Expanding <b>${node}</b>.`, Object.assign(snap(),{node,current:node}));
+    for(const nxt of ADJ[node]){
+      if(!seen.has(nxt)){
+        const had = (nxt in dist) ? dist[nxt] : null;
+        const nd = dist[node]+1; dist[nxt]=nd; tree.push(ekey(node,nxt)); q=q.concat([nxt]);
+        const over = (had!==null && had!==nd);
+        emit(over?'OVERWRITE':'PUSH',13,
+          over
+            ? `<b class="warn">Overwrote</b> <code>dist[${nxt}]</code>: it was <b>${had}</b>, now <b>${nd}</b>. A longer path just clobbered a shorter one — <b>this is the actual bug</b>, and it has nothing to do with where you mark.`
+            : `Push <b>${nxt}</b>, writing dist = ${nd} immediately.`,
+          Object.assign(snap(),{node,current:node,look:ekey(node,nxt),bad:over}));
+      }
+    }
+  }
+  const wrong = Object.keys(dist).filter(k=>dist[k]!==TRUE_DIST[k]);
+  emit('DONE',15,`Final distances: ${Object.keys(dist).sort().map(k=>`${k}=${dist[k]}`).join(', ')}. <b class="warn">Wrong for ${wrong.join(', ')}</b> — the true distances are ${wrong.map(k=>`${k}=${TRUE_DIST[k]}`).join(', ')}. <i>This</i> is what "BFS gives wrong distances" actually means.`, snap());
+  return {events, dist};
+}
+
+function traceDFSPop(){
+  const events=[], emit=mkEmit(events);
+  const seen=new Set(), order=[], tree=[];
+  let st=[{n:START,from:null}];
+  const snap=e=>Object.assign({frontier:st.map(x=>({n:x.n,stale:seen.has(x.n)})), seen:[...seen], order:[...order], tree:[...tree]}, e||{});
+  emit('INIT',1,`<b>frontier = [A]</b> — same loop, but the container is a <b>stack</b>, so we pop the <b>back</b>. Nothing is marked yet: DFS <i>must</i> mark on pop.`, snap());
+  while(st.length){
+    const {n:node,from}=st[st.length-1];
+    emit('POP',5,`<b>pop()</b> → <b>${node}</b>. The newest thing on the stack — that's the dive.`, Object.assign(snap(),{node,current:node}));
+    st=st.slice(0,-1);
+    if(seen.has(node)){
+      emit('STALE',7,`<b>${node}</b> already visited — <code>continue</code>. Duplicates on the stack are expected here; skipping them on the way out is what keeps this a real DFS.`, Object.assign(snap(),{node}));
+      continue;
+    }
+    seen.add(node); order.push(node); if(from) tree.push(ekey(from,node));
+    emit('VISIT',9,`Visit <b>${node}</b>${from?` — discovered through <b>${from}</b>, so ${from}→${node} is a tree edge`:''}. Order: [${fmt(order)}].`, Object.assign(snap(),{node,current:node}));
+    const nb=[...ADJ[node]].reverse();
+    for(const nxt of nb){
+      st=st.concat([{n:nxt,from:node}]);
+      emit('PUSH',11,`Push <b>${nxt}</b>. We push <i>reversed</i> (${nb.join(', ')}) so that <b>${nb[nb.length-1]}</b> — the first neighbour alphabetically — pops first, exactly as recursion would take it.`,
+        Object.assign(snap(),{node,current:node,look:ekey(node,nxt)}));
+    }
+  }
+  emit('DONE',12,`Stack empty. Order <b>${order.join(' ')}</b>, tree ${tree.map(t=>t.replace('-','→')).join(', ')}. Flip to <b>recursive</b> — it is identical. <b>G</b> was never reached: different component.`, snap());
+  return {events, order, tree};
+}
+
+function traceDFSPush(){
+  const events=[], emit=mkEmit(events);
+  const seen=new Set([START]), order=[], tree=[];
+  let st=[{n:START,from:null}];
+  const snap=e=>Object.assign({frontier:st.map(x=>({n:x.n})), seen:[...seen], order:[...order], tree:[...tree]}, e||{});
+  emit('INIT',1,`Same stack — but now we mark at <b>push</b> time, copying the BFS habit. Watch what it does to the <i>tree</i>.`, snap());
+  while(st.length){
+    const {n:node,from}=st[st.length-1];
+    emit('POP',5,`pop() → <b>${node}</b>.`, Object.assign(snap(),{node,current:node}));
+    st=st.slice(0,-1);
+    order.push(node); if(from) tree.push(ekey(from,node));
+    emit('VISIT',6,`Visit <b>${node}</b>${from?` — recorded as a child of <b>${from}</b>`:''}.`, Object.assign(snap(),{node,current:node}));
+    const nb=[...ADJ[node]].reverse();
+    for(const nxt of nb){
+      if(!seen.has(nxt)){
+        seen.add(nxt); st=st.concat([{n:nxt,from:node}]);
+        const steal = (node===START && nxt==='C');
+        emit(steal?'STEAL':'PUSH',9,
+          steal
+            ? `<b class="warn">Here's the damage.</b> <b>A</b> marks <b>C</b> as seen and claims it as its own child — even though the traversal is about to dive into B, and a real DFS would reach C <i>through B</i>, one level deeper. The child has been stolen.`
+            : `Mark <b>${nxt}</b> seen at push time and push it.`,
+          Object.assign(snap(),{node,current:node,look:ekey(node,nxt),bad:steal}));
+      } else {
+        emit('SKIP',8,`<b>${nxt}</b> already marked — skip. And because it was marked <i>early</i>, this edge never gets a chance to become a tree edge.`, Object.assign(snap(),{node,current:node,look:ekey(node,nxt)}));
+      }
+    }
+  }
+  emit('DONE',11,`Order <b>${order.join(' ')}</b> — but look at the tree: <b>A→C</b>, not B→C. In a real DFS on an undirected graph <i>every</i> non-tree edge joins an ancestor to a descendant. Here <b>B–C</b> joins two siblings: a <b>cross edge</b>, which a DFS tree can never contain. So this isn't a DFS — it just looks like one. That silently breaks bridges, articulation points and Tarjan's SCC.`,
+    Object.assign(snap(),{cross:'B-C'}));
+  return {events, order, tree};
+}
+
+function traceDFSRec(){
+  const events=[], emit=mkEmit(events);
+  const seen=new Set(), order=[], tree=[], frames=[];
+  const snap=e=>Object.assign({frontier:frames.map(n=>({n})), seen:[...seen], order:[...order], tree:[...tree]}, e||{});
+  emit('INIT',11,`<b>go(A)</b> — there is no <code>frontier</code> variable here. The <b>call stack itself</b> is the container; the panel below shows the live frames.`, snap());
+  (function go(node, from){
+    frames.push(node);
+    emit('CALL',5,`<b>go(${node})</b> — a frame is pushed. This is <code>frontier.push</code> wearing a costume.`, Object.assign(snap(),{node,current:node}));
+    seen.add(node); order.push(node); if(from) tree.push(ekey(from,node));
+    emit('VISIT',7,`Visit <b>${node}</b>. Order: [${fmt(order)}].`, Object.assign(snap(),{node,current:node}));
+    for(const nxt of ADJ[node]){
+      if(!seen.has(nxt)){
+        emit('RECURSE',9,`<b>${nxt}</b> unseen → recurse <i>immediately</i>, before even looking at ${node}'s remaining neighbours. That "one at a time" is precisely what the reversed push emulates.`, Object.assign(snap(),{node,current:node,look:ekey(node,nxt)}));
+        go(nxt,node);
+        emit('BACK',9,`Returned from <b>${nxt}</b> — its frame popped. Back in <b>${node}</b>, next neighbour.`, Object.assign(snap(),{node,current:node}));
+      } else {
+        emit('SKIP',8,`<b>${nxt}</b> already seen — skip.`, Object.assign(snap(),{node,current:node,look:ekey(node,nxt)}));
+      }
+    }
+    frames.pop();
+  })(START,null);
+  emit('DONE',12,`Order <b>${order.join(' ')}</b>. <b>Identical to the explicit-stack version</b> — same order, same tree. The call stack was the container all along.`, snap());
+  return {events, order, tree};
+}
+
+// true distances, for the bug demo
+const TRUE_DIST = (()=>{ const d={[START]:0}, q=[START]; let h=0;
+  while(h<q.length){ const u=q[h++]; for(const w of ADJ[u]) if(!(w in d)){ d[w]=d[u]+1; q.push(w);} } return d; })();
+
+// ---------- SVG ----------
+function buildGraphSVG(svg){
+  let s='';
+  EDGES.forEach(([u,v])=>{
+    const a=NODES.find(n=>n.id===u), b=NODES.find(n=>n.id===v);
+    s+=`<line class="edge" data-edge="${ekey(u,v)}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>`;
+  });
+  NODES.forEach(n=>{
+    s+=`<g class="node" data-node="${n.id}"><circle cx="${n.x}" cy="${n.y}" r="22"/>`
+     + `<text x="${n.x}" y="${n.y}">${n.id}</text>`
+     + `<text class="dlabel" data-dist="${n.id}" x="${n.x}" y="${n.y+36}"></text></g>`;
+  });
+  svg.innerHTML=s;
+}
+
+// ---------- Stepper ----------
+class Stepper{
+  constructor(refs){ this.r=refs; this.idx=0; }
+  load(ex){
+    this.ex=ex;
+    this.events=ex.tracer().events;
+    this.codeLines=ex.code||[];
+    if(this.r.graph) buildGraphSVG(this.r.graph);
+    if(this.r.code) this.renderCodeStatic();
+    this.idx=0; this.render();
+  }
+  renderCodeStatic(){
+    this.r.code.innerHTML=this.codeLines.map((l,i)=>
+      `<span class="ln" data-line="${i}">${hlLine(l)||'&nbsp;'}</span>`).join('');
+  }
+  render(){
+    const e=this.events[this.idx];
+    if(this.r.code){
+      this.r.code.querySelectorAll('.ln').forEach(el=>
+        el.classList.toggle('hl', +el.dataset.line===e.line));
+      const hl=this.r.code.querySelector('.ln.hl');
+      if(hl) hl.scrollIntoView({block:'nearest'});
+    }
+    if(this.r.graph) this.renderGraph(e);
+    if(this.r.fitems) this.renderFrontier(e);
+    if(this.r.seenRow) this.renderSet(this.r.seenRow, e.seen||[], 'seen');
+    if(this.r.orderRow) this.renderSet(this.r.orderRow, e.order||[], 'ord', true);
+    if(this.r.narr) this.r.narr.innerHTML=`<span class="ev">${e.type}</span>${e.narr}`;
+    if(this.r.stepc) this.r.stepc.textContent=`${this.idx+1} / ${this.events.length}`;
+  }
+  renderGraph(e){
+    const g=this.r.graph;
+    const seen=new Set(e.seen||[]), order=new Set(e.order||[]);
+    const front=new Set((e.frontier||[]).filter(f=>!f.stale).map(f=>f.n));
+    NODES.forEach(n=>{
+      const el=g.querySelector(`[data-node="${n.id}"]`);
+      el.className.baseVal='node';
+      if(order.has(n.id)) el.classList.add('done');
+      else if(front.has(n.id)||seen.has(n.id)) el.classList.add('frontier');
+      if(e.current===n.id) el.classList.add('current');
+      const dl=g.querySelector(`[data-dist="${n.id}"]`);
+      if(dl){
+        const f=(e.frontier||[]).find(x=>x.n===n.id);
+        const d=(this.ex.dist && this.ex.dist[n.id]!==undefined && order.has(n.id))
+          ? this.ex.dist[n.id] : (f&&f.d!==undefined&&!order.has(n.id)?f.d:undefined);
+        dl.textContent = (this.ex.showDist && d!==undefined) ? `d=${d}` : '';
+      }
+    });
+    const tree=new Set(e.tree||[]);
+    EDGES.forEach(([u,v])=>{
+      const k=ekey(u,v), el=g.querySelector(`[data-edge="${k}"]`);
+      el.className.baseVal='edge';
+      if(tree.has(k)) el.classList.add('tree');
+      if(e.cross===k) el.classList.add('cross');
+      if(e.look===k) el.classList.add('look');
+    });
+  }
+  renderFrontier(e){
+    const f=e.frontier||[];
+    const back=!!this.ex.lifo;
+    this.r.fitems.innerHTML = f.length
+      ? f.map((x,i)=>{
+          const isNext = back ? i===f.length-1 : i===0;
+          return `<span class="fitem${isNext?' next':''}${x.stale?' stale':''}">${x.n}`
+               + `${x.d!==undefined&&this.ex.showDist?`<span class="d">${x.d}</span>`:''}</span>`;
+        }).join('')
+      : `<span class="fempty">empty</span>`;
+    if(this.r.fleft)  this.r.fleft.classList.toggle('active', !back);
+    if(this.r.fright) this.r.fright.classList.toggle('active', back);
+    if(this.r.fhint)  this.r.fhint.textContent = back
+      ? 'stack (LIFO) — pops from the BACK' : 'queue (FIFO) — pops from the FRONT';
+  }
+  renderSet(el, arr, cls, ordered){
+    el.innerHTML = arr.length
+      ? arr.map((n,i)=>`<span class="pill ${cls}">${ordered?`<span class="d">${i+1}</span> `:''}${n}</span>`).join('')
+      : `<span class="fempty">∅</span>`;
+  }
+  next(){ if(this.idx<this.events.length-1){ this.idx++; this.render(); return true; } return false; }
+  prev(){ if(this.idx>0){ this.idx--; this.render(); } }
+  reset(){ this.idx=0; this.render(); }
+  atEnd(){ return this.idx>=this.events.length-1; }
+}
+
+// ---------- modes ----------
+const MODES = {
+  bfs:{
+    title:'BFS', dual:false, lifo:false, showDist:true,
+    variants:[
+      {key:'push', label:'mark on PUSH (standard)', code:CODE.bfs,    tracer:traceBFS},
+      {key:'pop',  label:'mark on POP (also correct)', code:CODE.bfsPop, tracer:traceBFSPop},
+      {key:'bug',  label:'dist written at PUSH (the real bug)', code:CODE.bfsBug, tracer:traceBFSBug, danger:true},
+    ],
+    knobs:{
+      container:'deque — <b>popleft()</b>, oldest first',
+      neighbours:'adj[node] — the adjacency list',
+      mark:'on PUSH · safe because insertion order = distance order',
+    },
+    alerts:{
+      pop:{cls:'info', html:`<b>Compare the final distances with the "mark on PUSH" chip — they're identical.</b> Mark-on-pop BFS is correct. It costs Θ(E) space instead of Θ(V), not correctness. The widely-repeated claim that it breaks distances is wrong.`},
+      bug:{cls:'danger', html:`<b>This is the bug people actually mean.</b> The distance is written at push time with no guard, so a longer path overwrites a shorter one. It has nothing to do with where you <i>mark</i> — watch <code>C</code> end up at 2 when its true distance is 1.`},
+    },
+  },
+  dfs:{
+    title:'DFS', dual:false, lifo:true, showDist:false,
+    variants:[
+      {key:'pop',  label:'mark on POP (correct)', code:CODE.dfs, tracer:traceDFSPop},
+      {key:'push', label:'mark on PUSH (not a DFS)', code:CODE.dfsPush, tracer:traceDFSPush, danger:true},
+      {key:'rec',  label:'recursive', code:CODE.dfsRec, tracer:traceDFSRec},
+    ],
+    knobs:{
+      container:'list — <b>pop()</b>, newest first',
+      neighbours:'reversed(adj[node]) — to match recursion',
+      mark:'on POP · required, or the tree is wrong',
+    },
+    alerts:{
+      push:{cls:'danger', html:`<b>This visits every node but is not a depth-first search.</b> Marking at push lets <code>A</code> claim <code>C</code> as its child before the dive into <code>B</code> ever happens. The result contains the cross edge <b>B–C</b> — and a DFS tree on an undirected graph can never have one. Across random graphs this produces a wrong tree about <b>45%</b> of the time, silently breaking bridges, articulation points and Tarjan's SCC.`},
+      rec:{cls:'info', html:`<b>Identical order and identical tree to the explicit-stack version.</b> The frontier panel is showing live call frames — the call stack was the container all along.`},
+    },
+  },
+  dual:{ title:'BFS × DFS', dual:true },
+};
+const ORDER=['bfs','dfs','dual'];
+let currentMode='bfs', currentVariant='push', playTimer=null;
+
+// ---------- wiring ----------
+const $=id=>document.getElementById(id);
+const R={
+  code:$('code'), graph:$('graph'), fitems:$('fitems'), fleft:$('fleft'), fright:$('fright'),
+  fhint:$('fhint'), seenRow:$('seenRow'), orderRow:$('orderRow'), narr:$('narr'), stepc:$('stepc'),
+};
+const stepper=new Stepper(R);
+const dualA=new Stepper({graph:$('dGraphA'), fitems:$('dFitemsA'), orderRow:$('dOrderA')});
+const dualB=new Stepper({graph:$('dGraphB'), fitems:$('dFitemsB'), orderRow:$('dOrderB')});
+
+function buildTabs(){
+  $('tabs').innerHTML=ORDER.map(k=>
+    `<button class="tab${k===currentMode?' active':''}" data-mode="${k}">${MODES[k].title}</button>`).join('');
+  $('tabs').querySelectorAll('.tab').forEach(b=>
+    b.onclick=()=>{ pause(); currentMode=b.dataset.mode; currentVariant=null; loadMode(); });
+}
+
+function loadMode(){
+  const m=MODES[currentMode];
+  buildTabs();
+  $('singleView').classList.toggle('hidden-block', !!m.dual);
+  $('dualView').classList.toggle('hidden-block', !m.dual);
+  $('knobsPanel').parentElement.querySelector('.knobs-label').style.display=m.dual?'none':'';
+  $('knobsPanel').style.display=m.dual?'none':'';
+
+  if(m.dual){
+    $('variantArea').classList.add('hidden-block');
+    $('alert').classList.remove('show');
+    dualA.load({tracer:traceBFS, lifo:false, showDist:true, dist:TRUE_DIST});
+    dualB.load({tracer:traceDFSPop, lifo:true, showDist:false});
+    syncDual();
+    updateBtns();
+    return;
+  }
+
+  if(!currentVariant || !m.variants.some(v=>v.key===currentVariant)) currentVariant=m.variants[0].key;
+  $('variantArea').classList.remove('hidden-block');
+  $('variantArea').innerHTML='<span>mode:</span>'+m.variants.map(v=>
+    `<span class="chip${v.key===currentVariant?' on':''}${v.danger?' danger':''}" data-v="${v.key}">${v.label}</span>`).join('');
+  $('variantArea').querySelectorAll('.chip').forEach(c=>
+    c.onclick=()=>{ pause(); currentVariant=c.dataset.v; loadMode(); });
+
+  const v=m.variants.find(x=>x.key===currentVariant);
+  const knobs=Object.assign({}, m.knobs);
+  if(currentVariant==='pop'&&currentMode==='bfs') knobs.mark='on POP · correct, but Θ(E) space';
+  if(currentVariant==='bug') knobs.mark='dist written at PUSH · <b style="color:var(--prune)">broken</b>';
+  if(currentVariant==='push'&&currentMode==='dfs') knobs.mark='on PUSH · <b style="color:var(--prune)">not a DFS</b>';
+  if(currentVariant==='rec') knobs.container='the <b>call stack</b> — frames push and pop';
+  if(currentVariant==='rec') knobs.neighbours='adj[node] — recursion takes them one at a time';
+  $('knobsPanel').innerHTML=
+    `<div class="knob"><span class="kl">① container</span><span class="kv">${knobs.container}</span></div>`+
+    `<div class="knob"><span class="kl">② neighbours</span><span class="kv">${knobs.neighbours}</span></div>`+
+    `<div class="knob"><span class="kl">③ when you mark</span><span class="kv">${knobs.mark}</span></div>`;
+
+  const al=m.alerts&&m.alerts[currentVariant];
+  $('alert').className='alert'+(al?` ${al.cls} show`:'');
+  if(al) $('alert').innerHTML=al.html;
+
+  stepper.load({tracer:v.tracer, code:v.code, lifo:m.lifo,
+    showDist:m.showDist&&currentVariant!=='rec', dist:currentVariant==='push'?TRUE_DIST:null});
+  updateBtns();
+}
+
+function syncDual(){
+  $('dNarr').innerHTML=`<span class="ev">STEP ${Math.max(dualA.idx,dualB.idx)+1}</span>`
+    +`Both columns run the <b>identical loop</b> on the <b>identical graph</b>. Left pops the front, right pops the back — that is the only difference in the source.`;
+  $('stepc').textContent=`${Math.max(dualA.idx,dualB.idx)+1} / ${Math.max(dualA.events.length,dualB.events.length)}`;
+}
+function updateBtns(){
+  const m=MODES[currentMode];
+  const at0 = m.dual ? (dualA.idx===0&&dualB.idx===0) : stepper.idx===0;
+  const atE = m.dual ? (dualA.atEnd()&&dualB.atEnd()) : stepper.atEnd();
+  $('btnPrev').disabled=at0; $('btnNext').disabled=atE;
+}
+function stepNext(){
+  const m=MODES[currentMode];
+  if(m.dual){ const a=dualA.next(), b=dualB.next(); syncDual(); updateBtns(); return a||b; }
+  const ok=stepper.next(); updateBtns(); return ok;
+}
+function stepPrev(){
+  const m=MODES[currentMode];
+  if(m.dual){ dualA.prev(); dualB.prev(); syncDual(); } else stepper.prev();
+  updateBtns();
+}
+function resetAll(){
+  pause();
+  const m=MODES[currentMode];
+  if(m.dual){ dualA.reset(); dualB.reset(); syncDual(); } else stepper.reset();
+  updateBtns();
+}
+function play(){
+  if(playTimer) return;
+  $('btnPlay').textContent='⏸ Pause';
+  playTimer=setInterval(()=>{ if(!stepNext()) pause(); }, +$('speed').value);
+}
+function pause(){ if(playTimer){ clearInterval(playTimer); playTimer=null; } $('btnPlay').textContent='▶ Play'; }
+
+// ---------- predict-next-pop ----------
+// Before a POP event, ask which node comes out. Options = the distinct live
+// (non-stale) nodes currently in the frontier; expected = the node the next
+// POP event actually pops. Only fires in single view, stepping by hand, with
+// >= 2 candidates — otherwise there is nothing to predict.
+function pendingPrediction(){
+  if(!$('predictToggle').checked || playTimer || MODES[currentMode].dual) return null;
+  const nextEv = stepper.events[stepper.idx+1];
+  if(!nextEv || nextEv.type!=='POP') return null;
+  const cur = stepper.events[stepper.idx];
+  const live = [...new Set((cur.frontier||[]).filter(f=>!f.stale).map(f=>f.n))];
+  if(live.length < 2 || !live.includes(nextEv.node)) return null;
+  return {expected: nextEv.node, options: live};
+}
+let predictExpected=null;
+function openPredict(p){
+  predictExpected=p.expected;
+  $('predictOpts').innerHTML=p.options.map(n=>`<span class="popt" data-guess="${n}">${n}</span>`).join('');
+  $('predictOpts').querySelectorAll('.popt').forEach(o=>{
+    o.onclick=()=>{
+      $('predictOpts').querySelectorAll('.popt').forEach(x=>{
+        if(x.dataset.guess===predictExpected) x.classList.add('correct');
+      });
+      if(o.dataset.guess!==predictExpected) o.classList.add('wrong');
+      setTimeout(()=>{ $('predictOverlay').classList.remove('show'); stepNext(); }, 750);
+    };
+  });
+  $('predictOverlay').classList.add('show');
+}
+$('predictSkip').onclick=()=>{ $('predictOverlay').classList.remove('show'); stepNext(); };
+function tryNext(){
+  const p=pendingPrediction();
+  if(p) openPredict(p); else stepNext();
+}
+
+// ---------- self-check reveal ----------
+document.querySelectorAll('.qa .q').forEach(q=>
+  q.onclick=()=>q.parentElement.classList.toggle('open'));
+
+$('btnNext').onclick=()=>{ pause(); tryNext(); };
+$('btnPrev').onclick=()=>{ pause(); stepPrev(); };
+$('btnReset').onclick=resetAll;
+$('btnPlay').onclick=()=>{ playTimer?pause():play(); };
+$('speed').oninput=()=>{ if(playTimer){ pause(); play(); } };
+document.addEventListener('keydown',e=>{
+  if(/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+  if($('predictOverlay').classList.contains('show')) return;
+  if(e.code==='ArrowRight'||e.code==='Space'){ e.preventDefault(); pause(); tryNext(); }
+  else if(e.code==='ArrowLeft'){ e.preventDefault(); pause(); stepPrev(); }
+  else if(e.code==='KeyR'){ resetAll(); }
+});
+
+loadMode();
+</script>
+</body>
+</html>

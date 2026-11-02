@@ -1,0 +1,9 @@
+# macOS
+.DS_Store
+
+# Local session/agent state — not part of the journey
+.remember/
+
+# Third-party course material (NeetCode cheatsheets + lecture PDFs).
+# Kept on disk for study, deliberately not republished here.
+*.pdf

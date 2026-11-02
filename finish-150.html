@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finish the 150 — Graphs · DP · the back half</title>
+<style>
+  :root{
+    --bg:#0f172a; --surface:#1e293b; --surface2:#243244; --line:#334155;
+    --teal:#2dd4bf; --yellow:#fbbf24; --text:#e2e8f0; --muted:#94a3b8; --dim:#64748b;
+    --easy:#4ade80; --med:#fbbf24; --hard:#f87171; --deep:#2dd4bf; --extra:#a78bfa;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; line-height:1.5; padding-bottom:60px;}
+  a{color:inherit;}
+  .wrap{max-width:840px; margin:0 auto; padding:0 16px;}
+
+  /* ---- sticky header ---- */
+  header{position:sticky; top:0; z-index:20; background:rgba(15,23,42,.92); backdrop-filter:blur(8px); border-bottom:1px solid var(--line);}
+  .head-inner{max-width:840px; margin:0 auto; padding:12px 16px;}
+  h1{font-size:18px; font-weight:700; letter-spacing:-.2px;}
+  h1 .accent{color:var(--teal);}
+  .sub{font-size:12.5px; color:var(--muted); margin-top:2px;}
+  .bars{display:flex; gap:14px; margin-top:10px; flex-wrap:wrap;}
+  .barblock{flex:1; min-width:200px;}
+  .barlabel{display:flex; justify-content:space-between; font-size:11.5px; color:var(--muted); margin-bottom:4px;}
+  .barlabel b{color:var(--text); font-weight:600;}
+  .track{height:7px; background:var(--surface2); border-radius:20px; overflow:hidden;}
+  .fill{height:100%; width:0%; border-radius:20px; transition:width .35s ease;}
+  .fill.core{background:linear-gradient(90deg,var(--teal),#5eead4);}
+  .fill.deep{background:linear-gradient(90deg,var(--extra),#c4b5fd);}
+
+  /* ---- strategy banner ---- */
+  .banner{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin:18px 0;}
+  .banner h2{font-size:13px; text-transform:uppercase; letter-spacing:.5px; color:var(--teal); margin-bottom:8px;}
+  .rule{font-size:13.5px; color:var(--text); margin:6px 0;}
+  .rule .k{color:var(--extra); font-weight:600;}
+  .rule .k2{color:var(--teal); font-weight:600;}
+  .hatch{font-size:12.5px; color:var(--muted); margin-top:8px; padding-top:8px; border-top:1px dashed var(--line);}
+  .hatch b{color:var(--yellow);}
+
+  /* ---- order strip ---- */
+  .order{display:flex; gap:6px; flex-wrap:wrap; align-items:center; font-size:11.5px; color:var(--dim); margin:0 0 20px;}
+  .order .step{background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:3px 9px; color:var(--muted);}
+  .order .arw{color:var(--dim);}
+
+  /* ---- topic card ---- */
+  .topic{background:var(--surface); border:1px solid var(--line); border-radius:14px; margin-bottom:16px; overflow:hidden;}
+  .thead{display:flex; align-items:center; gap:10px; padding:14px 16px; cursor:pointer; user-select:none;}
+  .thead:hover{background:var(--surface2);}
+  .tnum{font-size:12px; color:var(--dim); font-weight:700; min-width:18px;}
+  .tname{font-size:15.5px; font-weight:700; flex:0 0 auto;}
+  .tag{font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; padding:2px 7px; border-radius:6px;}
+  .tag.deep{background:rgba(45,212,191,.14); color:var(--teal); border:1px solid rgba(45,212,191,.35);}
+  .tag.core150{background:rgba(148,163,184,.12); color:var(--muted); border:1px solid rgba(148,163,184,.28);}
+  .tnote{font-size:12px; color:var(--muted); flex:1; min-width:0;}
+  .tprog{font-size:12px; color:var(--muted); font-weight:600; white-space:nowrap;}
+  .tprog b{color:var(--teal);}
+  .chev{color:var(--dim); transition:transform .2s; font-size:12px;}
+  .topic.collapsed .chev{transform:rotate(-90deg);}
+  .tbody{padding:2px 10px 10px;}
+  .topic.collapsed .tbody{display:none;}
+
+  .section-lbl{font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--dim); padding:12px 8px 6px; display:flex; align-items:center; gap:8px;}
+  .section-lbl .line{flex:1; height:1px; background:var(--line);}
+  .section-lbl.rec{color:var(--extra);}
+  .section-lbl.opt{color:var(--dim);}
+
+  /* ---- learn-first strip ---- */
+  .learn{background:linear-gradient(180deg,rgba(45,212,191,.08),rgba(45,212,191,.02)); border:1px solid rgba(45,212,191,.22); border-radius:10px; padding:10px 12px; margin:6px 8px 2px;}
+  .learn-lbl{font-size:10.5px; text-transform:uppercase; letter-spacing:.6px; color:var(--teal); font-weight:700; margin-bottom:9px;}
+  .learn-row{display:flex; flex-wrap:wrap; gap:7px; align-items:center;}
+  .learn-src{display:inline-flex; align-items:baseline; gap:6px; text-decoration:none; background:var(--surface2); border:1px solid var(--line); border-radius:8px; padding:5px 10px; font-size:12.5px; color:var(--text); transition:all .13s;}
+  .learn-src:hover{border-color:var(--teal); color:var(--teal); transform:translateY(-1px);}
+  .learn-src .who{font-weight:600;}
+  .learn-src .what{color:var(--muted); font-size:11px;}
+  .learn-src:hover .what{color:var(--teal);}
+  .learn-src.alt{background:transparent;}
+  .learn-src .lt{font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--teal); background:rgba(45,212,191,.13); border-radius:4px; padding:1px 5px; align-self:center;}
+  .lsn{display:inline-flex; align-items:center; gap:7px; text-decoration:none; background:var(--surface2); border:1px solid var(--line); border-left:3px solid var(--teal); border-radius:7px; padding:5px 9px; font-size:12.5px; color:var(--text); transition:all .13s;}
+  .lsn:hover{border-color:var(--teal); border-left-color:var(--teal); color:var(--teal);}
+  .lsn .ln{font-size:10px; color:var(--dim); font-variant-numeric:tabular-nums;}
+  .lsn .lm{font-size:10.5px; color:var(--muted);}
+  .lsn:hover .lm{color:var(--teal);}
+  .lsn.adv{border-left-color:var(--extra);}
+  .lsn.adv:hover{border-color:var(--extra); color:var(--extra);}
+  .lsn.adv:hover .lm{color:var(--extra);}
+  .learn-sub{font-size:10px; text-transform:uppercase; letter-spacing:.5px; color:var(--dim); margin:9px 0 6px; font-weight:700;}
+  .learn-viz{display:inline-flex; align-items:center; gap:5px; text-decoration:none; font-size:11.5px; color:var(--extra); border:1px dashed rgba(167,139,250,.4); border-radius:8px; padding:5px 10px;}
+  .learn-viz:hover{background:rgba(167,139,250,.1);}
+  .learn-note{font-size:11.5px; color:var(--muted); margin-top:8px; line-height:1.5;}
+  .learn-note b{color:var(--yellow);}
+
+  /* ---- problem row ---- */
+  .prob{display:flex; align-items:center; gap:11px; padding:8px 8px; border-radius:9px; cursor:pointer; transition:background .12s;}
+  .prob:hover{background:var(--surface2);}
+  .prob input{appearance:none; -webkit-appearance:none; width:19px; height:19px; min-width:19px; border:2px solid var(--dim); border-radius:6px; cursor:pointer; position:relative; transition:all .15s;}
+  .prob input:checked{background:var(--teal); border-color:var(--teal);}
+  .prob input:checked::after{content:"✓"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#062c26; font-size:12px; font-weight:900;}
+  .num{font-size:11.5px; color:var(--dim); font-variant-numeric:tabular-nums; min-width:38px;}
+  .name{font-size:14px; color:var(--text); text-decoration:none; flex:1; min-width:0;}
+  .name:hover{color:var(--teal); text-decoration:underline;}
+  .prob.done .name{color:var(--dim); text-decoration:line-through;}
+  .lock{font-size:10px; color:var(--yellow); opacity:.85; margin-left:5px; cursor:help;}
+  .diff{font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:6px; min-width:44px; text-align:center;}
+  .diff.Easy{background:rgba(74,222,128,.14); color:var(--easy);}
+  .diff.Medium{background:rgba(251,191,36,.14); color:var(--med);}
+  .diff.Hard{background:rgba(248,113,113,.14); color:var(--hard);}
+  .plus{font-size:10px; font-weight:700; color:var(--extra); background:rgba(167,139,250,.13); border:1px solid rgba(167,139,250,.3); padding:1px 6px; border-radius:5px;}
+
+  /* ---- timeline ---- */
+  .timeline{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 16px 16px; margin:0 0 22px;}
+  .tl-head{font-size:13px; text-transform:uppercase; letter-spacing:.5px; color:var(--teal); margin-bottom:4px;}
+  .tl-sub{font-size:11.5px; color:var(--muted); margin-bottom:14px;}
+  .tl-track{position:relative;}
+  .tl-row{display:grid; grid-template-columns:74px 20px 1fr; align-items:center; gap:8px; padding:6px 0; position:relative;}
+  .tl-row::before{content:""; position:absolute; left:91px; top:0; bottom:0; width:2px; background:var(--line); z-index:0;}
+  .tl-row:first-child::before{top:50%;}
+  .tl-row:last-child::before{bottom:50%;}
+  .tl-date{font-size:11px; color:var(--muted); text-align:right; white-space:nowrap; line-height:1.2;}
+  .tl-node{width:11px; height:11px; border-radius:50%; background:var(--surface); border:2px solid var(--dim); justify-self:center; z-index:1;}
+  .tl-node.start{background:var(--text); border-color:var(--text);}
+  .tl-node.deep{background:var(--extra); border-color:var(--extra);}
+  .tl-node.tail{background:var(--surface); border-color:var(--teal);}
+  .tl-node.exam{background:var(--bg); border-color:var(--yellow);}
+  .tl-node.goal{width:15px; height:15px; background:var(--teal); border-color:var(--teal); box-shadow:0 0 0 4px rgba(45,212,191,.18);}
+  .tl-label{font-size:13px; color:var(--text); line-height:1.3;}
+  .tl-cum{font-size:10.5px; color:var(--dim);}
+  .mini{font-size:9px; font-weight:700; color:var(--extra); border:1px solid rgba(167,139,250,.4); padding:0 4px; border-radius:4px; margin-left:5px; vertical-align:middle;}
+  .tl-row.exam-row{background:rgba(251,191,36,.06); border-radius:8px;}
+  .tl-row.exam-row .tl-label{color:var(--yellow);}
+  .tl-row.goal-row .tl-label{color:var(--teal); font-weight:700;}
+  .tl-row.faded{opacity:.5;}
+
+  /* ---- core/tail split ---- */
+  .split{font-size:11px; text-transform:uppercase; letter-spacing:.7px; text-align:center; margin:22px 0 12px; display:flex; align-items:center; gap:12px; font-weight:700;}
+  .split::before,.split::after{content:""; flex:1; height:1px; background:var(--line);}
+  .split.core{color:var(--teal);}
+  .split.tail{color:var(--dim); font-weight:600;}
+
+  footer{text-align:center; font-size:11.5px; color:var(--dim); margin-top:26px; line-height:1.8;}
+  .reset{background:none; border:1px solid var(--line); color:var(--muted); font-size:11.5px; padding:5px 12px; border-radius:8px; cursor:pointer;}
+  .reset:hover{border-color:var(--hard); color:var(--hard);}
+  @media (max-width:520px){
+    .tnote{display:none;} .name{font-size:13.5px;} .banner .rule{font-size:12.5px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-inner">
+    <h1>Finish the <span class="accent">150</span> <span style="color:var(--dim);font-weight:400;font-size:14px">· the back half</span></h1>
+    <div class="sub">Graphs · DP · Greedy · the topics between you and interview-ready.</div>
+    <div class="bars">
+      <div class="barblock">
+        <div class="barlabel"><span>150 core (the finish line)</span><b><span id="coreDone">0</span>/81</b></div>
+        <div class="track"><div class="fill core" id="coreFill"></div></div>
+      </div>
+      <div class="barblock">
+        <div class="barlabel"><span>Graph + DP deep-dive (250 extras)</span><b><span id="deepDone">0</span>/22</b></div>
+        <div class="track"><div class="fill deep" id="deepFill"></div></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="banner">
+    <h2>The plan</h2>
+    <div class="rule"><span class="k2">Go deep (do the 250 extras):</span> Graphs · Advanced Graphs · 1-D DP · 2-D DP. These are the real interview walls — fluency comes from volume.</div>
+    <div class="rule"><span class="k">Just the 150 core:</span> Backtracking · Greedy · Intervals · Bit Manipulation · Math. Template-based — extra reps give diminishing returns.</div>
+    <div class="rule"><span class="k2">Learn first:</span> every topic opens with its <b style="color:var(--teal)">NeetCode course</b> lessons — the courses, not the problem videos. Those teach the concept from motivation → intuition → code. <span style="color:var(--muted)">You already pay for them. Lesson → its problems → visualize what stays fuzzy.</span></div>
+    <div class="hatch"><b>Escape hatch:</b> finish a core topic and it still feels shaky? That's your signal — then (and only then) do its <span style="color:var(--extra)">+250</span> extras. Don't pre-grind them.</div>
+  </div>
+
+  <div class="timeline">
+    <div class="tl-head">📅 The timeline</div>
+    <div class="tl-sub">1 problem/day · pause for MST · EST never collides with the plan.</div>
+    <div class="tl-track">
+      <div class="tl-row"><span class="tl-date">Jul 20</span><span class="tl-node start"></span><span class="tl-label">Start — today</span></div>
+      <div class="tl-row"><span class="tl-date">Jul 29</span><span class="tl-node tail"></span><span class="tl-label">Backtracking done <span class="tl-cum">· 10</span></span></div>
+      <div class="tl-row"><span class="tl-date">Aug 19</span><span class="tl-node deep"></span><span class="tl-label">Graphs done <span class="mini">+250</span> <span class="tl-cum">· 31</span></span></div>
+      <div class="tl-row"><span class="tl-date">Aug 29</span><span class="tl-node deep"></span><span class="tl-label">Advanced Graphs done <span class="mini">+250</span> <span class="tl-cum">· 41</span></span></div>
+      <div class="tl-row"><span class="tl-date">Sep 15</span><span class="tl-node deep"></span><span class="tl-label">1-D DP done <span class="mini">+250</span> <span class="tl-cum">· 58 — finish this before MST</span></span></div>
+      <div class="tl-row exam-row"><span class="tl-date">Sep 21–Oct 3</span><span class="tl-node exam"></span><span class="tl-label">MST — pause &amp; rest</span></div>
+      <div class="tl-row"><span class="tl-date">Oct 14</span><span class="tl-node deep"></span><span class="tl-label">2-D DP done <span class="mini">+250</span> <span class="tl-cum">· 74</span></span></div>
+      <div class="tl-row goal-row"><span class="tl-date">Oct 22</span><span class="tl-node goal"></span><span class="tl-label">🏁 Core 6 done — graphs · DP · greedy behind you <span class="tl-cum">· 82</span></span></div>
+      <div class="tl-row"><span class="tl-date">Oct 28</span><span class="tl-node tail"></span><span class="tl-label">Intervals done <span class="tl-cum">· 88</span></span></div>
+      <div class="tl-row"><span class="tl-date">Nov 4</span><span class="tl-node tail"></span><span class="tl-label">Bit Manipulation done <span class="tl-cum">· 95</span></span></div>
+      <div class="tl-row goal-row"><span class="tl-date">Nov 12</span><span class="tl-node goal"></span><span class="tl-label">🏁 All 103 done — Math &amp; Geometry closes it <span class="tl-cum">· 103</span></span></div>
+      <div class="tl-row exam-row faded"><span class="tl-date">Dec 7–19</span><span class="tl-node exam"></span><span class="tl-label">EST — you're already done ✓</span></div>
+    </div>
+  </div>
+
+  <div id="topics"></div>
+
+  <footer>
+    Progress is saved automatically in this browser. Premium 🔒 problems link to the free NeetCode mirror.<br>
+    <span style="color:var(--muted)">NeetCode 150 core + 250 extras · verified from neetcode.io</span><br><br>
+    <button class="reset" id="resetBtn">Reset all progress</button>
+  </footer>
+</div>
+
+<script>
+const PREMIUM = {
+  'graph-valid-tree':'valid-tree',
+  'walls-and-gates':'islands-and-treasure',
+  'number-of-connected-components-in-an-undirected-graph':'count-connected-components',
+  'alien-dictionary':'foreign-dictionary',
+  'meeting-rooms':'meeting-schedule',
+  'meeting-rooms-ii':'meeting-schedule-ii'
+};
+
+// Concept-first source to LEARN each topic BEFORE grinding problems.
+// PRIMARY = the NeetCode courses (included with your Pro sub) — NOT the problem
+// walkthrough videos. Each lesson = video + a written article that opens with
+// motivation/intuition before any code, plus its own "Suggested Problems" list.
+// Lesson numbers + times verified against the live course sidebars, Jul 2026.
+// c:'b' = Algorithms & Data Structures for Beginners · c:'a' = Advanced Algorithms
+const COURSE = {
+  b:{slug:'dsa-for-beginners', name:'DSA for Beginners'},
+  a:{slug:'advanced-algorithms', name:'Advanced Algorithms'}
+};
+const LEARN = {
+  'Backtracking':{
+    lessons:[
+      {c:'b', n:22, t:'Tree Maze', m:14},
+      {c:'a', n:11, t:'Subsets', m:22},
+      {c:'a', n:12, t:'Combinations', m:17},
+      {c:'a', n:13, t:'Permutations', m:18},
+    ],
+    src:[{who:'Aditya Verma', what:'Recursion playlist', url:'https://www.youtube.com/playlist?list=PL_z_8CaSLPWeT1ffjiImo0sYTcnLzo-wY', tag:'if you want deeper'}],
+    viz:{what:'Recursion Tree', url:'https://recursion.vercel.app'},
+    note:'Subsets / Combinations / Permutations are literally your first three problems. Draw the decision tree before you code — every one of these is "pick / don\'t pick" down a tree.'
+  },
+  'Graphs':{
+    lessons:[
+      {c:'b', n:28, t:'Intro to Graphs', m:22},
+      {c:'b', n:29, t:'Matrix DFS', m:22},
+      {c:'b', n:30, t:'Matrix BFS', m:14},
+      {c:'b', n:31, t:'Adjacency List', m:20},
+    ],
+    src:[{who:'William Fiset', what:'Graph Theory', url:'https://www.youtube.com/playlist?list=PLDV1Zeh2NRsDGO4--qE8yH72HFL1Km93P', tag:'if you want deeper'}],
+    viz:{what:'DFS/BFS visual', url:'https://visualgo.net/en/dfsbfs'},
+    note:'Matrix DFS + Matrix BFS are the whole grid half of this card — Islands, Max Area, Rotting Oranges, Surrounded Regions, Pacific Atlantic, Walls and Gates are one traversal reskinned six times.'
+  },
+  'Advanced Graphs':{
+    lessons:[
+      {c:'a', n:7,  t:'Union-Find', m:20},
+      {c:'a', n:17, t:'Topological Sort', m:30},
+      {c:'a', n:14, t:"Dijkstra's", m:23},
+      {c:'a', n:15, t:"Prim's", m:24},
+      {c:'a', n:16, t:"Kruskal's", m:11},
+    ],
+    src:[{who:'William Fiset', what:'Bellman-Ford + more', url:'https://www.youtube.com/playlist?list=PLDV1Zeh2NRsDGO4--qE8yH72HFL1Km93P', tag:'fills the gap'}],
+    viz:{what:'Shortest-path visual', url:'https://visualgo.net/en/sssp'},
+    note:'Union-Find also unlocks Valid Tree / Connected Components / Redundant Connection back on the Graphs card. <b>Gap:</b> the course skips Bellman-Ford — you need it for Cheapest Flights Within K Stops, so grab that one from Fiset.'
+  },
+  '1-D Dynamic Programming':{
+    lessons:[
+      {c:'b', n:32, t:'1-Dimension DP', m:20},
+      {c:'a', n:18, t:'0/1 Knapsack', m:28},
+      {c:'a', n:19, t:'Unbounded Knapsack', m:30},
+    ],
+    src:[{who:'Aditya Verma', what:'DP playlist', url:'https://www.youtube.com/playlist?list=PLeuU9ICKUA4d5xIQW2Y6MLSF_Ivw46-bn', tag:'if it stays fuzzy'}],
+    viz:{what:'Recursion Tree', url:'https://recursion.vercel.app'},
+    note:'Recursion → spot the repeated subproblem → memoize → tabulate. Learn knapsack as a <em>named pattern</em>, not one problem: Coin Change and Partition Equal Subset Sum are both knapsack in disguise.'
+  },
+  '2-D Dynamic Programming':{
+    lessons:[
+      {c:'b', n:33, t:'2-Dimension DP', m:22},
+      {c:'a', n:20, t:'LCS', m:32},
+      {c:'a', n:21, t:'Palindromes', m:17},
+    ],
+    src:[{who:'Aditya Verma', what:'DP playlist', url:'https://www.youtube.com/playlist?list=PLeuU9ICKUA4d5xIQW2Y6MLSF_Ivw46-bn', tag:'if it stays fuzzy'}],
+    viz:{what:'Recursion Tree', url:'https://recursion.vercel.app'},
+    note:'LCS is the parent of half this card — Edit Distance, Distinct Subsequences and Interleaving String are all the same two-pointer-on-a-grid shape. Learn it cold.'
+  },
+  'Greedy':{
+    lessons:[
+      {c:'a', n:0, t:"Kadane's Algorithm", m:22, free:true},
+    ],
+    src:[{who:'Abdul Bari', what:'Algorithms · greedy set', url:'https://www.youtube.com/playlist?list=PLDN4rrl48XKpZkf03iYFl-O29szjTrs_O', tag:'for the rest'}],
+    note:'Kadane\'s covers Maximum Subarray outright (and the circular variant in the extras). <b>Gap:</b> the courses have no greedy chapter beyond it — Bari is the fallback. Greedy = "prove the local choice is safe."'
+  },
+  'Intervals':{
+    src:[{who:'GeeksforGeeks', what:'Merge Intervals pattern', url:'https://www.geeksforgeeks.org/dsa/merging-intervals/', tag:'one pattern'}],
+    note:'<b>Gap:</b> no course chapter and no good video course anywhere — it\'s one small pattern. Sort by start, then sweep. Read this once; the NeetCode walkthroughs cover the rest.'
+  },
+  'Bit Manipulation':{
+    lessons:[
+      {c:'b', n:34, t:'Bit Operations', m:17},
+    ],
+    viz:{what:'Bitmask visual', url:'https://visualgo.net/en/bitmask'},
+    note:'One 17-min lesson is the whole topic. XOR cancels pairs, n &amp; (n-1) drops the lowest set bit, masks select. Pattern-match, don\'t grind.'
+  },
+  'Math & Geometry':{
+    note:'No concept lesson needed — these are individual tricks (Pow, spiral, rotate). Look each up when you hit it.'
+  },
+};
+
+// t: 'core' = NeetCode 150 · 'extra' = NeetCode 250 addition
+const TOPICS = [
+  { name:'Backtracking', deep:false, note:'Finish it — small set of templates, and the on-ramp to graphs.',
+    core:[
+      ['Subsets',78,'Medium','subsets'],
+      ['Combination Sum',39,'Medium','combination-sum'],
+      ['Combination Sum II',40,'Medium','combination-sum-ii'],
+      ['Permutations',46,'Medium','permutations'],
+      ['Subsets II',90,'Medium','subsets-ii'],
+      ['Generate Parentheses',22,'Medium','generate-parentheses'],
+      ['Word Search',79,'Medium','word-search'],
+      ['Palindrome Partitioning',131,'Medium','palindrome-partitioning'],
+      ['Letter Combinations of a Phone Number',17,'Medium','letter-combinations-of-a-phone-number'],
+      ['N-Queens',51,'Hard','n-queens'],
+    ],
+    extra:[
+      ['Combinations',77,'Medium','combinations'],
+      ['Permutations II',47,'Medium','permutations-ii'],
+      ['Matchsticks to Square',473,'Medium','matchsticks-to-square'],
+      ['Partition to K Equal Sum Subsets',698,'Medium','partition-to-k-equal-sum-subsets'],
+      ['Sum of All Subset XOR Totals',1863,'Easy','sum-of-all-subset-xor-totals'],
+      ['Word Break II',140,'Hard','word-break-ii'],
+      ['N-Queens II',52,'Hard','n-queens-ii'],
+    ]},
+
+  { name:'Graphs', deep:true, note:'Highest interview ROI. Go deep — variety builds recognition.',
+    core:[
+      ['Number of Islands',200,'Medium','number-of-islands'],
+      ['Max Area of Island',695,'Medium','max-area-of-island'],
+      ['Clone Graph',133,'Medium','clone-graph'],
+      ['Walls and Gates',286,'Medium','walls-and-gates'],
+      ['Rotting Oranges',994,'Medium','rotting-oranges'],
+      ['Pacific Atlantic Water Flow',417,'Medium','pacific-atlantic-water-flow'],
+      ['Surrounded Regions',130,'Medium','surrounded-regions'],
+      ['Course Schedule',207,'Medium','course-schedule'],
+      ['Course Schedule II',210,'Medium','course-schedule-ii'],
+      ['Graph Valid Tree',261,'Medium','graph-valid-tree'],
+      ['Number of Connected Components in an Undirected Graph',323,'Medium','number-of-connected-components-in-an-undirected-graph'],
+      ['Redundant Connection',684,'Medium','redundant-connection'],
+      ['Word Ladder',127,'Hard','word-ladder'],
+    ],
+    extra:[
+      ['Island Perimeter',463,'Easy','island-perimeter'],
+      ['Verifying an Alien Dictionary',953,'Easy','verifying-an-alien-dictionary'],
+      ['Find the Town Judge',997,'Easy','find-the-town-judge'],
+      ['Minimum Height Trees',310,'Medium','minimum-height-trees'],
+      ['Evaluate Division',399,'Medium','evaluate-division'],
+      ['Accounts Merge',721,'Medium','accounts-merge'],
+      ['Open the Lock',752,'Medium','open-the-lock'],
+      ['Course Schedule IV',1462,'Medium','course-schedule-iv'],
+    ]},
+
+  { name:'Advanced Graphs', deep:true, note:'Dijkstra, MST, topo-sort. Go deep — these are the hard filters.',
+    core:[
+      ['Network Delay Time',743,'Medium','network-delay-time'],
+      ['Cheapest Flights Within K Stops',787,'Medium','cheapest-flights-within-k-stops'],
+      ['Min Cost to Connect All Points',1584,'Medium','min-cost-to-connect-all-points'],
+      ['Reconstruct Itinerary',332,'Hard','reconstruct-itinerary'],
+      ['Swim in Rising Water',778,'Hard','swim-in-rising-water'],
+      ['Alien Dictionary',269,'Hard','alien-dictionary'],
+    ],
+    extra:[
+      ['Path with Minimum Effort',1631,'Medium','path-with-minimum-effort'],
+      ['Find Critical and Pseudo-Critical Edges in MST',1489,'Hard','find-critical-and-pseudo-critical-edges-in-minimum-spanning-tree'],
+      ['Build a Matrix With Conditions',2392,'Hard','build-a-matrix-with-conditions'],
+      ['Greatest Common Divisor Traversal',2709,'Hard','greatest-common-divisor-traversal'],
+    ]},
+
+  { name:'1-D Dynamic Programming', deep:true, note:'The wall. Go deep — DP fluency is pure volume of reps.',
+    core:[
+      ['Climbing Stairs',70,'Easy','climbing-stairs'],
+      ['Min Cost Climbing Stairs',746,'Easy','min-cost-climbing-stairs'],
+      ['House Robber',198,'Medium','house-robber'],
+      ['House Robber II',213,'Medium','house-robber-ii'],
+      ['Longest Palindromic Substring',5,'Medium','longest-palindromic-substring'],
+      ['Palindromic Substrings',647,'Medium','palindromic-substrings'],
+      ['Decode Ways',91,'Medium','decode-ways'],
+      ['Coin Change',322,'Medium','coin-change'],
+      ['Maximum Product Subarray',152,'Medium','maximum-product-subarray'],
+      ['Word Break',139,'Medium','word-break'],
+      ['Longest Increasing Subsequence',300,'Medium','longest-increasing-subsequence'],
+      ['Partition Equal Subset Sum',416,'Medium','partition-equal-subset-sum'],
+    ],
+    extra:[
+      ['N-th Tribonacci Number',1137,'Easy','n-th-tribonacci-number'],
+      ['Perfect Squares',279,'Medium','perfect-squares'],
+      ['Integer Break',343,'Medium','integer-break'],
+      ['Combination Sum IV',377,'Medium','combination-sum-iv'],
+      ['Stone Game III',1406,'Hard','stone-game-iii'],
+    ]},
+
+  { name:'2-D Dynamic Programming', deep:true, note:'Grids, strings, knapsack. Go deep — the second half of the wall.',
+    core:[
+      ['Unique Paths',62,'Medium','unique-paths'],
+      ['Longest Common Subsequence',1143,'Medium','longest-common-subsequence'],
+      ['Best Time to Buy and Sell Stock with Cooldown',309,'Medium','best-time-to-buy-and-sell-stock-with-cooldown'],
+      ['Coin Change II',518,'Medium','coin-change-ii'],
+      ['Target Sum',494,'Medium','target-sum'],
+      ['Interleaving String',97,'Medium','interleaving-string'],
+      ['Longest Increasing Path in a Matrix',329,'Hard','longest-increasing-path-in-a-matrix'],
+      ['Distinct Subsequences',115,'Hard','distinct-subsequences'],
+      ['Edit Distance',72,'Medium','edit-distance'],
+      ['Burst Balloons',312,'Hard','burst-balloons'],
+      ['Regular Expression Matching',10,'Hard','regular-expression-matching'],
+    ],
+    extra:[
+      ['Unique Paths II',63,'Medium','unique-paths-ii'],
+      ['Minimum Path Sum',64,'Medium','minimum-path-sum'],
+      ['Stone Game',877,'Medium','stone-game'],
+      ['Last Stone Weight II',1049,'Medium','last-stone-weight-ii'],
+      ['Stone Game II',1140,'Medium','stone-game-ii'],
+    ]},
+
+  { name:'Greedy', deep:false, note:'Insight-based — you see the trick or you don’t. 150 core is enough.',
+    core:[
+      ['Maximum Subarray',53,'Medium','maximum-subarray'],
+      ['Jump Game',55,'Medium','jump-game'],
+      ['Jump Game II',45,'Medium','jump-game-ii'],
+      ['Gas Station',134,'Medium','gas-station'],
+      ['Hand of Straights',846,'Medium','hand-of-straights'],
+      ['Merge Triplets to Form Target Triplet',1899,'Medium','merge-triplets-to-form-target-triplet'],
+      ['Partition Labels',763,'Medium','partition-labels'],
+      ['Valid Parenthesis String',678,'Medium','valid-parenthesis-string'],
+    ],
+    extra:[
+      ['Lemonade Change',860,'Easy','lemonade-change'],
+      ['Dota2 Senate',649,'Medium','dota2-senate'],
+      ['Maximum Sum Circular Subarray',918,'Medium','maximum-sum-circular-subarray'],
+      ['Longest Turbulent Subarray',978,'Medium','longest-turbulent-subarray'],
+      ['Jump Game VII',1871,'Medium','jump-game-vii'],
+      ['Candy',135,'Hard','candy'],
+    ]},
+
+  { name:'Intervals', deep:false, note:'Small, pattern-y. Clicks fast once DP is done.',
+    core:[
+      ['Insert Interval',57,'Medium','insert-interval'],
+      ['Merge Intervals',56,'Medium','merge-intervals'],
+      ['Non-Overlapping Intervals',435,'Medium','non-overlapping-intervals'],
+      ['Meeting Rooms',252,'Easy','meeting-rooms'],
+      ['Meeting Rooms II',253,'Medium','meeting-rooms-ii'],
+      ['Minimum Interval to Include Each Query',1851,'Hard','minimum-interval-to-include-each-query'],
+    ],
+    extra:[
+      ['Meeting Rooms III',2402,'Hard','meeting-rooms-iii'],
+    ]},
+
+  { name:'Bit Manipulation', deep:false, note:'Low-priority tail. Learn the tricks, don’t grind.',
+    core:[
+      ['Single Number',136,'Easy','single-number'],
+      ['Number of 1 Bits',191,'Easy','number-of-1-bits'],
+      ['Counting Bits',338,'Easy','counting-bits'],
+      ['Reverse Bits',190,'Easy','reverse-bits'],
+      ['Missing Number',268,'Easy','missing-number'],
+      ['Sum of Two Integers',371,'Medium','sum-of-two-integers'],
+      ['Reverse Integer',7,'Medium','reverse-integer'],
+    ],
+    extra:[
+      ['Add Binary',67,'Easy','add-binary'],
+      ['Bitwise AND of Numbers Range',201,'Medium','bitwise-and-of-numbers-range'],
+      ['Minimum Array End',3133,'Medium','minimum-array-end'],
+    ]},
+
+  { name:'Math & Geometry', deep:false, note:'Low-priority tail. Skim the patterns.',
+    core:[
+      ['Plus One',66,'Easy','plus-one'],
+      ['Happy Number',202,'Easy','happy-number'],
+      ['Pow(x, n)',50,'Medium','powx-n'],
+      ['Multiply Strings',43,'Medium','multiply-strings'],
+      ['Rotate Image',48,'Medium','rotate-image'],
+      ['Spiral Matrix',54,'Medium','spiral-matrix'],
+      ['Set Matrix Zeroes',73,'Medium','set-matrix-zeroes'],
+      ['Detect Squares',2013,'Medium','detect-squares'],
+    ],
+    extra:[
+      ['Roman to Integer',13,'Easy','roman-to-integer'],
+      ['Excel Sheet Column Title',168,'Easy','excel-sheet-column-title'],
+      ['Transpose Matrix',867,'Easy','transpose-matrix'],
+      ['Greatest Common Divisor of Strings',1071,'Easy','greatest-common-divisor-of-strings'],
+      ['Insert Greatest Common Divisors in Linked List',2807,'Medium','insert-greatest-common-divisors-in-linked-list'],
+    ]},
+];
+
+const LS_KEY = 'dsa_finish150_v1';
+const COLLAPSE_KEY = 'dsa_finish150_collapsed_v1';
+let state = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+let collapsed = JSON.parse(localStorage.getItem(COLLAPSE_KEY) || '{}');
+
+function save(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+function saveCollapse(){ localStorage.setItem(COLLAPSE_KEY, JSON.stringify(collapsed)); }
+
+function href(slug){
+  return PREMIUM[slug]
+    ? 'https://neetcode.io/problems/' + PREMIUM[slug]
+    : 'https://leetcode.com/problems/' + slug + '/';
+}
+
+function rowHTML(p, isExtra){
+  const [name, num, diff, slug] = p;
+  const done = state[slug] ? ' done' : '';
+  const checked = state[slug] ? ' checked' : '';
+  const lock = PREMIUM[slug] ? ' <span class="lock" title="LeetCode Premium — opens the free NeetCode mirror">🔒</span>' : '';
+  const plus = isExtra ? '<span class="plus">+250</span>' : '';
+  return `<label class="prob${done}" data-slug="${slug}">
+    <input type="checkbox"${checked}>
+    <span class="num">#${num}</span>
+    <a class="name" href="${href(slug)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${name}</a>${lock}
+    ${plus}
+    <span class="diff ${diff}">${diff==='Medium'?'Med':diff}</span>
+  </label>`;
+}
+
+function learnHTML(name){
+  const L = LEARN[name];
+  if(!L) return '';
+  let lessons='';
+  if(L.lessons && L.lessons.length){
+    const mins = L.lessons.reduce((a,l)=>a+l.m,0);
+    const chips = L.lessons.map(l=>{
+      const c = COURSE[l.c];
+      return `<a class="lsn${l.c==='a'?' adv':''}" href="https://neetcode.io/courses/${c.slug}/${l.n}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="${c.name} · lesson ${l.n}"><span class="ln">${l.c==='a'?'ADV':'BEG'} ${l.n}</span>${l.t}<span class="lm">${l.m}m</span></a>`;
+    }).join('');
+    lessons = `<div class="learn-sub">NeetCode courses · ${mins} min total · included with Pro</div><div class="learn-row">${chips}</div>`;
+  }
+  const srcs = (L.src||[]).map(s=>
+    `<a class="learn-src${s.alt?' alt':''}" href="${s.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()"><span class="who">${s.who}</span><span class="what">${s.what}</span>${s.tag?`<span class="lt">${s.tag}</span>`:''}</a>`
+  ).join('');
+  const viz = L.viz ? `<a class="learn-viz" href="${L.viz.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">📊 ${L.viz.what}</a>` : '';
+  const backupLbl = (srcs && L.lessons) ? '<div class="learn-sub">Backup / gap-filler</div>' : '';
+  const row = (srcs||viz) ? `${backupLbl}<div class="learn-row">${srcs}${viz}</div>` : '';
+  const note = L.note ? `<div class="learn-note">${L.note}</div>` : '';
+  return `<div class="learn"><div class="learn-lbl">▶ Learn the concept first</div>${lessons}${row}${note}</div>`;
+}
+
+function topicHTML(t, idx){
+  const coreDone = t.core.filter(p=>state[p[3]]).length;
+  const isCol = collapsed[t.name] ? ' collapsed' : '';
+  const badge = t.deep
+    ? '<span class="tag deep">go deep</span>'
+    : '<span class="tag core150">150 only</span>';
+  let extraLbl, extras='';
+  if(t.extra.length){
+    if(t.deep){
+      extraLbl = `<div class="section-lbl rec"><span>➕ NeetCode 250 extras · recommended — build fluency</span><span class="line"></span></div>`;
+    } else {
+      extraLbl = `<div class="section-lbl opt"><span>➕ 250 extras · optional — only if this topic feels shaky</span><span class="line"></span></div>`;
+    }
+    extras = extraLbl + t.extra.map(p=>rowHTML(p,true)).join('');
+  }
+  return `<div class="topic${isCol}" data-topic="${t.name}">
+    <div class="thead">
+      <span class="tnum">${idx+1}</span>
+      <span class="tname">${t.name}</span>
+      ${badge}
+      <span class="tnote">${t.note}</span>
+      <span class="tprog"><b class="tc">${coreDone}</b>/${t.core.length}</span>
+      <span class="chev">▼</span>
+    </div>
+    <div class="tbody">
+      ${learnHTML(t.name)}
+      <div class="section-lbl"><span>150 core</span><span class="line"></span></div>
+      ${t.core.map(p=>rowHTML(p,false)).join('')}
+      ${extras}
+    </div>
+  </div>`;
+}
+
+function render(){
+  document.getElementById('topics').innerHTML = TOPICS.map((t,i)=>{
+    let block = topicHTML(t,i);
+    if(i===0) block = '<div class="split core">Core 6 · the real work — done by ~Oct 22</div>' + block;
+    if(i===6) block = '<div class="split tail">Cleanup tail · easy / medium — batch these</div>' + block;
+    return block;
+  }).join('');
+  updateTotals();
+}
+
+const DEEP = new Set(['Graphs','Advanced Graphs','1-D Dynamic Programming','2-D Dynamic Programming']);
+function updateTotals(){
+  let coreDone=0, coreTot=0, deepDone=0, deepTot=0;
+  TOPICS.forEach(t=>{
+    coreTot += t.core.length;
+    coreDone += t.core.filter(p=>state[p[3]]).length;
+    if(DEEP.has(t.name)){
+      deepTot += t.extra.length;
+      deepDone += t.extra.filter(p=>state[p[3]]).length;
+    }
+  });
+  document.getElementById('coreDone').textContent = coreDone;
+  document.getElementById('deepDone').textContent = deepDone;
+  document.getElementById('coreFill').style.width = (coreDone/coreTot*100)+'%';
+  document.getElementById('deepFill').style.width = (deepDone/deepTot*100)+'%';
+}
+
+function updateTopicCount(topicEl){
+  const name = topicEl.dataset.topic;
+  const t = TOPICS.find(x=>x.name===name);
+  const coreDone = t.core.filter(p=>state[p[3]]).length;
+  topicEl.querySelector('.tc').textContent = coreDone;
+}
+
+// events
+document.getElementById('topics').addEventListener('change', e=>{
+  if(e.target.matches('input[type=checkbox]')){
+    const label = e.target.closest('.prob');
+    const slug = label.dataset.slug;
+    if(e.target.checked) state[slug]=1; else delete state[slug];
+    label.classList.toggle('done', e.target.checked);
+    save();
+    updateTopicCount(label.closest('.topic'));
+    updateTotals();
+  }
+});
+
+document.getElementById('topics').addEventListener('click', e=>{
+  const head = e.target.closest('.thead');
+  if(head){
+    const topic = head.closest('.topic');
+    topic.classList.toggle('collapsed');
+    collapsed[topic.dataset.topic] = topic.classList.contains('collapsed') ? 1 : 0;
+    saveCollapse();
+  }
+});
+
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  if(confirm('Clear all checkmarks? This cannot be undone.')){
+    state={}; save(); render();
+  }
+});
+
+render();
+</script>
+</body>
+</html>

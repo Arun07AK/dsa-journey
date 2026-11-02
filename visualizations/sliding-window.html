@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5 Variations of Sliding Window — Animated</title>
+<style>
+  :root{--bg:#0f172a;--surface:#1e293b;--surface2:#273449;--border:#334155;
+  --text:#e2e8f0;--muted:#94a3b8;--teal:#2dd4bf;--yellow:#fbbf24;
+  --red:#f87171;--green:#4ade80;--blue:#60a5fa;--purple:#a78bfa;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.6;padding-bottom:60px}
+  a{color:var(--teal);text-decoration:none}
+  code,.mono{font-family:"SF Mono",Menlo,Consolas,monospace}
+
+  /* nav */
+  .nav{position:sticky;top:0;z-index:50;background:rgba(15,23,42,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+  .nav a{color:var(--muted);font-size:14px;font-weight:500}
+  .nav a:hover{color:var(--teal)}
+  .nav .brand{color:var(--text);font-weight:700;margin-right:auto}
+
+  /* layout */
+  .wrap{max-width:1040px;margin:0 auto;padding:24px 20px}
+  h1{font-size:26px;margin-bottom:4px}
+  .sub{color:var(--muted);margin-bottom:20px;font-size:15px}
+  h2{font-size:19px;margin:34px 0 12px;color:var(--text)}
+  h2 .num{color:var(--teal);font-weight:800;margin-right:8px}
+  p{margin:10px 0}
+
+  /* variation switcher (tabs) */
+  .varswitcher{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 8px;border-bottom:1px solid var(--border);padding-bottom:14px}
+  .vtab{background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:10px 14px;border-radius:10px;cursor:pointer;font-size:13.5px;font-weight:600;transition:.15s;text-align:left;line-height:1.3}
+  .vtab:hover{border-color:var(--teal);color:var(--text)}
+  .vtab.sel{border-color:var(--teal);color:var(--teal);background:rgba(45,212,191,.1)}
+  .vtab .vnum{display:block;font-size:11px;color:var(--muted);font-family:"SF Mono",Menlo,monospace;margin-bottom:2px}
+  .vtab.sel .vnum{color:var(--teal)}
+
+  /* prose boxes */
+  .why{background:rgba(45,212,191,.07);border-left:3px solid var(--teal);padding:14px 18px;border-radius:0 10px 10px 0;margin:18px 0;font-size:14.5px}
+  .why b{color:var(--teal)}
+  .keytake{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 22px;margin-top:26px;font-size:14.5px}
+  .keytake h3{color:var(--teal);font-size:16px;margin-bottom:10px}
+  .keytake ul{margin-left:18px}
+  .keytake li{margin:7px 0}
+  .keytake b{color:var(--yellow)}
+  .keytake table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
+  .keytake th,.keytake td{border:1px solid var(--border);padding:7px 10px;text-align:left}
+  .keytake th{background:var(--surface2);color:var(--teal);font-size:12.5px}
+  .keytake td .mono{color:var(--yellow)}
+
+  /* stage narration */
+  .stage{display:flex;align-items:center;gap:14px;margin-bottom:14px;min-height:50px;flex-wrap:wrap}
+  .stage-badge{flex-shrink:0;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 16px;font-weight:800;font-size:14px;letter-spacing:.5px;transition:.3s}
+  .stage-badge.live{background:var(--teal);color:#0b1120;border-color:var(--teal)}
+  .stage-badge.expand{background:var(--green);color:#0b1120;border-color:var(--green)}
+  .stage-badge.shrink{background:var(--red);color:#0b1120;border-color:var(--red)}
+  .stage-badge.record{background:var(--blue);color:#0b1120;border-color:var(--blue)}
+  .stage-badge.found{background:var(--yellow);color:#0b1120;border-color:var(--yellow)}
+  .stage-text{font-size:15px}
+  .stage-text b{color:var(--yellow)}
+  .g{color:var(--green);font-weight:700}
+  .r{color:var(--red);font-weight:700}
+
+  /* visualization card */
+  .stagearea{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:26px 22px 30px}
+  .vizextra{margin-bottom:20px;min-height:10px}
+
+  /* linear cells */
+  .arr{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:4px 0 2px;position:relative}
+  .cellbox{display:flex;flex-direction:column;align-items:center;gap:3px}
+  .cell{width:50px;height:50px;display:flex;align-items:center;justify-content:center;background:var(--surface2);border:2px solid var(--border);border-radius:10px;font-size:17px;font-weight:700;font-family:"SF Mono",Menlo,monospace;transition:.35s}
+  .cell.dim{opacity:.28;filter:grayscale(.6)}
+  .cell.win{border-color:var(--surface2);background:rgba(45,212,191,.06)}
+  .cell.atL{box-shadow:0 0 0 1px var(--blue)}
+  .cell.atR{box-shadow:0 0 0 1px var(--purple)}
+  .cell.added{border-color:var(--green);background:rgba(74,222,128,.18);animation:pop .35s ease}
+  .cell.dropped{border-color:var(--red);border-style:dashed;background:rgba(248,113,113,.12);opacity:.55;animation:ruleout .35s ease}
+  .cell.target{background:rgba(167,139,250,.18)}
+  .cell.dup{box-shadow:0 0 0 2px var(--red);border-color:var(--red)}
+  .cell.best{border-color:var(--yellow);background:rgba(251,191,36,.25);box-shadow:0 0 18px rgba(251,191,36,.5);animation:pop .4s ease}
+  @keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.16)}100%{transform:scale(1)}}
+  @keyframes ruleout{0%{opacity:1}100%{opacity:.55}}
+  .idx{font-size:11px;color:var(--muted);font-family:"SF Mono",Menlo,monospace}
+  .ptr{height:22px;font-size:12px;font-weight:800;font-family:"SF Mono",Menlo,monospace;display:flex;align-items:flex-start;justify-content:center}
+  .ptr.l{color:var(--blue)}.ptr.r{color:var(--purple)}
+
+  /* bespoke: V1 bracket + ledger */
+  .bracket{display:flex;justify-content:center;margin:2px 0 14px}
+  .bracket-inner{border:2px solid var(--teal);border-bottom:none;border-radius:8px 8px 0 0;height:16px;position:relative}
+  .bracket-lbl{position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:12px;font-weight:800;color:var(--teal);font-family:"SF Mono",Menlo,monospace;white-space:nowrap}
+  .ledger{text-align:center;font-family:"SF Mono",Menlo,monospace;font-size:15px;color:var(--muted)}
+  .ledger .add{color:var(--green);font-weight:700}
+  .ledger .sub{color:var(--red);font-weight:700}
+  .ledger .res{color:var(--teal);font-weight:700}
+
+  /* readout line */
+  .readout{text-align:center;margin-top:16px;font-size:13.5px;color:var(--muted);font-family:"SF Mono",Menlo,monospace}
+  .readout b{color:var(--teal);font-size:16px}
+  .readout .best{color:var(--yellow)}
+  .readout .lead{font-family:-apple-system,sans-serif}
+
+  /* controls */
+  .controls{display:flex;gap:10px;align-items:center;margin:20px 0 4px;flex-wrap:wrap}
+  .btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:9px;cursor:pointer;font-size:14px;font-weight:700;transition:.15s}
+  .btn:hover:not(:disabled){border-color:var(--teal);color:var(--teal)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn.primary{background:var(--teal);color:#0b1120;border-color:var(--teal)}
+  .btn.primary:hover:not(:disabled){color:#0b1120}
+  .stepcount{color:var(--muted);font-size:13px;margin-left:auto;font-family:"SF Mono",Menlo,monospace}
+  .kbdhint{font-size:12px;color:var(--muted);margin-top:6px}
+  .kbdhint kbd{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-family:"SF Mono",Menlo,monospace;font-size:11px}
+
+  /* preset switcher */
+  .presets{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .preset{background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:8px 13px;border-radius:8px;cursor:pointer;font-size:13px;font-family:"SF Mono",Menlo,monospace;transition:.15s}
+  .preset:hover{border-color:var(--teal);color:var(--text)}
+  .preset.sel{border-color:var(--teal);color:var(--teal);background:rgba(45,212,191,.1);font-weight:700}
+  .preset .tag{display:block;font-size:10px;color:var(--muted);font-family:-apple-system,sans-serif;margin-top:2px}
+  .preset.sel .tag{color:var(--teal)}
+
+  /* code block */
+  pre{background:#0b1120;border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow-x:auto;margin:14px 0;font-size:13.5px;line-height:1.7}
+  pre code{color:var(--text)}
+  .cmt{color:var(--muted)}.kw{color:var(--purple)}.fn{color:var(--blue)}.str{color:var(--green)}
+
+  /* quiz */
+  .q{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:16px 20px;margin:12px 0}
+  .q .prompt{font-weight:600;font-size:15px}
+  .q .prompt .mono{color:var(--yellow)}
+  .q .reveal-btn{margin-top:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;transition:.15s}
+  .q .reveal-btn:hover{border-color:var(--teal);color:var(--teal)}
+  .q .solution{display:none;margin-top:14px;padding-top:14px;border-top:1px dashed var(--border);font-size:14.5px}
+  .q .solution.show{display:block}
+  .q .solution .mono{color:var(--teal)}
+  .q .solution b{color:var(--yellow)}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <span class="brand">Sliding Window — 5 Variations</span>
+  <a href="find-min-rotated-sorted-array.html">Find Min</a>
+  <a href="search-rotated-sorted-array.html">Search</a>
+  <a href="../STRATEGY.md">DSA strategy</a>
+  <a href="../solved.md">solved.md</a>
+</nav>
+
+<div class="wrap">
+  <h1 id="vTitle">The 5 Variations of Sliding Window</h1>
+  <p class="sub" id="vSub">One pattern, five shapes. Master these and most window problems become "which of the five is this?"</p>
+
+  <!-- VARIATION SWITCHER -->
+  <div class="varswitcher" id="varswitcher"></div>
+
+  <!-- 1. INTUITION (swapped per variation) -->
+  <h2><span class="num">1</span>The intuition first</h2>
+  <div id="whyBox"></div>
+
+  <!-- 2. WALKTHROUGH (shared engine) -->
+  <h2><span class="num">2</span>Watch it run</h2>
+  <div class="stage">
+    <div class="stage-badge" id="stageBadge">START</div>
+    <div class="stage-text" id="stageText"></div>
+  </div>
+
+  <div class="stagearea">
+    <div class="vizextra" id="vizExtra"></div>
+    <div class="arr" id="arr"></div>
+    <div class="readout" id="readout"></div>
+
+    <div class="controls">
+      <button class="btn" id="backBtn" onclick="prev()">◀ Back</button>
+      <button class="btn primary" id="stepBtn" onclick="next()">Step ▶</button>
+      <button class="btn" onclick="resetSteps()">Reset ↺</button>
+      <span class="stepcount" id="stepcount"></span>
+    </div>
+    <div class="kbdhint">Keyboard: <kbd>→</kbd>/<kbd>Space</kbd> step · <kbd>←</kbd> back · <kbd>R</kbd> reset</div>
+  </div>
+
+  <p style="margin-top:18px;font-size:14px;color:var(--muted)">Try a different input:</p>
+  <div class="presets" id="presets"></div>
+
+  <!-- 3. CODE (swapped per variation) -->
+  <h2><span class="num">3</span>The code</h2>
+  <div id="codeBox"></div>
+
+  <!-- 4. SELF-QUIZ (swapped per variation) -->
+  <h2><span class="num">4</span>Check yourself — recall before you reveal</h2>
+  <p style="font-size:14px;color:var(--muted)">Answer in your head first. No scores here — just reveal and compare.</p>
+  <div id="quizBox"></div>
+
+  <!-- KEY TAKEAWAYS (shared) -->
+  <div class="keytake">
+    <h3>The whole pattern on one card</h3>
+    <p>Every sliding-window problem is one of these five. The interview skill is <b>recognizing which</b> from the prompt:</p>
+    <table>
+      <tr><th>If the prompt asks…</th><th>It's this variation</th><th>The move</th></tr>
+      <tr><td>"…over any <span class="mono">k</span> consecutive…"</td><td>1 · Fixed window</td><td>slide a width-k window; O(1) add-right / drop-left</td></tr>
+      <tr><td>"longest … with sum ≤ k"</td><td>2 · Sum constraint</td><td>expand R; shrink L while sum &gt; k; record length</td></tr>
+      <tr><td>"longest … with at most N of x"</td><td>3 · Count constraint</td><td>expand R; shrink L while count &gt; N; record length</td></tr>
+      <tr><td>"longest … no repeats"</td><td>4 · Not-repeated</td><td>expand R; jump L past the last duplicate; record length</td></tr>
+      <tr><td>"how many subarrays with product &lt; k"</td><td>5 · Count subarrays</td><td>expand R; shrink L until valid; <span class="mono">res += r-l+1</span></td></tr>
+    </table>
+    <ul>
+      <li><b>Shared spine:</b> R almost always marches forward; L only moves to <em>restore</em> the constraint. The window never resets to the start — that's why it's O(n), not O(n²).</li>
+      <li><b>Fixed vs variable:</b> variation 1 keeps a constant width; 2–5 let the width breathe.</li>
+      <li><b>Longest vs count:</b> 2–4 track a best <em>length</em>; 5 <em>accumulates</em> — a legal window of width w adds exactly w new subarrays.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* =====================================================================
+   VARIATION MODULES — each is self-contained: its own buildSteps (which
+   SIMULATES the real algorithm, so the picture is faithful by construction),
+   its own bespoke visual (renderExtra), readout, cell classes, and narration.
+   One shared render() dispatches to the active module.
+   ===================================================================== */
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+const VARIATIONS = [];
+
+/* ---------------------------------------------------------------------
+   VARIATION 1 — FIXED WINDOW (max sum over any k consecutive)
+   --------------------------------------------------------------------- */
+VARIATIONS.push({
+  id:'fixed',
+  tabLabel:'Fixed window',
+  tabHint:'max over any k',
+  title:'1 · The subarray-length constraint (fixed window)',
+  sub:'"Find the max profit over any k consecutive days." The window is a fixed width k that just slides.',
+  presets:[
+    {nums:[6,10,8,5,16,7,9,6], k:4, tag:'NeetCode card · max=39'},
+    {nums:[1,2,3,4,5,6],       k:2, tag:'k=2 · max=11'},
+    {nums:[5,5,5,5],           k:4, tag:'whole array · max=20'},
+    {nums:[2,1,5,1,3,2],       k:3, tag:'k=3 · max=9'},
+  ],
+  whyHTML:`
+    <div class="why">
+      <b>The window never changes size — it just walks.</b> You're asked for the best block of exactly <span class="mono">k</span> in a row (max 4-day profit, etc.). The naive way recomputes each block's sum from scratch: O(n·k). The trick: when the window slides one step right, you <b>add the new element on the right and subtract the one that fell off the left</b> — the sum updates in O(1). One pass, O(n).
+      <br><br>
+      Real-world picture: a <em>4-day rolling total</em> on a calendar. To get tomorrow's total you don't re-add four days — you add tomorrow and drop the day that rolled out of view.
+    </div>`,
+  codeHTML:`<pre><code><span class="kw">def</span> <span class="fn">maxFixed</span>(nums, k):
+    window = <span class="fn">sum</span>(nums[:k])      <span class="cmt"># seed the first k</span>
+    best = window
+    <span class="kw">for</span> r <span class="kw">in</span> <span class="fn">range</span>(k, <span class="fn">len</span>(nums)):
+        window += nums[r] - nums[r-k]  <span class="cmt"># add right, drop left — O(1)</span>
+        best = <span class="fn">max</span>(best, window)
+    <span class="kw">return</span> best</code></pre>`,
+  quizHTML:`
+    <div class="q">
+      <div class="prompt">Q1. For <span class="mono">[6,10,8,5,16,7,9,6]</span>, k=4: what's the running sum right after the window slides from indices 0–3 to indices 1–4?</div>
+      <button class="reveal-btn" onclick="toggle('f_s1')">Reveal</button>
+      <div class="solution" id="f_s1">
+        Seed sum (0–3) = <span class="mono">6+10+8+5 = 29</span>. Slide: add <span class="mono">nums[4]=16</span>, drop <span class="mono">nums[0]=6</span> → <span class="mono">29 + 16 − 6 = 39</span>. That window <span class="mono">[10,8,5,16]</span> is the answer.
+      </div>
+    </div>
+    <div class="q">
+      <div class="prompt">Q2. Why is the per-step update O(1) instead of re-summing k elements?</div>
+      <button class="reveal-btn" onclick="toggle('f_s2')">Reveal</button>
+      <div class="solution" id="f_s2">
+        Consecutive windows overlap in <span class="mono">k−1</span> elements. Only one element enters and one leaves, so the new sum is <b>old sum + entering − leaving</b>. You reuse all the shared work instead of recomputing it — that's the whole point of "sliding."
+      </div>
+    </div>`,
+
+  buildSteps(p){
+    const nums=p.nums, k=p.k, steps=[];
+    let sum=0, best=-Infinity, bestL=0, bestR=k-1;
+    for(let i=0;i<k;i++){
+      sum+=nums[i];
+      steps.push({phase:'seed-add', l:0, r:i, sum, best, bestL, bestR, added:i, k});
+    }
+    best=sum; bestL=0; bestR=k-1;
+    steps.push({phase:'seed-done', l:0, r:k-1, sum, best, bestL, bestR, k});
+    for(let r=k;r<nums.length;r++){
+      sum+=nums[r];
+      steps.push({phase:'slide-add', l:r-k, r, sum, best, bestL, bestR, added:r, k}); // transient k+1 bulge
+      const dropped=r-k;
+      sum-=nums[dropped];
+      const l=r-k+1;
+      if(sum>best){ best=sum; bestL=l; bestR=r; }
+      steps.push({phase:'slide-drop', l, r, sum, best, bestL, bestR, dropped, added:r, k});
+    }
+    steps.push({phase:'done', l:bestL, r:bestR, sum, best, bestL, bestR, k});
+    return steps;
+  },
+
+  cellClass(st,i,nums){
+    const cls=[];
+    if(st.phase==='done'){ if(i>=st.bestL && i<=st.bestR) cls.push('best'); return cls; }
+    if(st.added===i && (st.phase==='slide-add')) cls.push('added');
+    if(st.dropped===i && st.phase==='slide-drop') cls.push('dropped');
+    if(st.phase==='seed-add' && i===st.added) cls.push('added');
+    return cls;
+  },
+  cellPtr(st,i){
+    if(st.phase==='done') return i===st.bestL ? '<span class="ptr l">best</span>' : '';
+    const out=[];
+    if(i===st.l) out.push('<span class="ptr l">l</span>');
+    if(i===st.r) out.push('<span class="ptr r">r</span>');
+    return out.join('');
+  },
+  renderExtra(st, host, nums){
+    if(st.phase==='done'){ host.innerHTML=''; return; }
+    // fixed-window bracket spanning the current window, labelled k
+    const cellW=58; // 50 + 8 gap
+    const width = (st.r - st.l + 1)*cellW - 8;
+    // bracket positioned over the window; we approximate with a centered bracket since arr is flex-centered
+    let bracket = `<div class="bracket"><div class="bracket-inner" style="width:${width}px"><span class="bracket-lbl">window k=${st.k}${(st.r-st.l+1)!==st.k?` (sliding: ${st.r-st.l+1})`:''}</span></div></div>`;
+    // delta ledger
+    let ledger='';
+    if(st.phase==='slide-add'){
+      ledger = `<div class="ledger">add <span class="add">+${nums[st.added]}</span> (entering right) … now drop the left next</div>`;
+    } else if(st.phase==='slide-drop'){
+      ledger = `<div class="ledger">drop <span class="sub">−${nums[st.dropped]}</span> (left fell off) ⇒ window sum = <span class="res">${st.sum}</span></div>`;
+    } else if(st.phase==='seed-add'){
+      ledger = `<div class="ledger">seeding first ${st.k}: <span class="add">+${nums[st.added]}</span> ⇒ <span class="res">${st.sum}</span></div>`;
+    } else if(st.phase==='seed-done'){
+      ledger = `<div class="ledger">first window seeded ⇒ sum = <span class="res">${st.sum}</span></div>`;
+    }
+    host.innerHTML = bracket + ledger;
+  },
+  renderReadout(st, host, nums){
+    if(st.phase==='done'){
+      host.innerHTML = `<span class="lead">best k-window sum:</span> <b class="best">${st.best}</b> <span class="lead">at indices [${st.bestL}, ${st.bestR}] = [${nums.slice(st.bestL,st.bestR+1).join(',')}]</span>`;
+      return;
+    }
+    host.innerHTML = `<span class="lead">window sum:</span> <b>${st.sum}</b> &nbsp;·&nbsp; <span class="lead">best so far:</span> <span class="best">${st.best===-Infinity?'—':st.best}</span>`;
+  },
+  stage(st, nums){
+    if(st.phase==='seed-add')  return {badge:'SEED', cls:'live', text:`Seeding the first ${st.k} elements. Added <b>${nums[st.added]}</b> → running sum <b>${st.sum}</b>.`};
+    if(st.phase==='seed-done') return {badge:'SEED ✓', cls:'live', text:`First window [0, ${st.k-1}] seeded. Sum = <b>${st.sum}</b>. Now slide one step at a time.`};
+    if(st.phase==='slide-add') return {badge:'ADD RIGHT', cls:'expand', text:`Slide right: a new element <b>${nums[st.added]}</b> enters. Window momentarily has ${st.k+1} cells — we'll drop the left next.`};
+    if(st.phase==='slide-drop')return {badge:'DROP LEFT', cls:'shrink', text:`<b>${nums[st.dropped]}</b> fell off the left. Window is back to width ${st.k}, sum = <b>${st.sum}</b>. ${st.bestL===st.l&&st.bestR===st.r?'<span class="g">New best!</span>':''}`};
+    if(st.phase==='done')      return {badge:'DONE', cls:'found', text:`Best ${st.k}-day sum is <b>${st.best}</b>.`};
+    return {badge:'START', cls:'live', text:''};
+  },
+  isChars:false,
+});
+
+/* ---------------------------------------------------------------------
+   VARIATION 2 — VARIABLE WINDOW, LONGEST subarray with sum <= k
+   --------------------------------------------------------------------- */
+VARIATIONS.push({
+  id:'sum',
+  tabLabel:'Sum constraint',
+  tabHint:'longest sum ≤ k',
+  title:'2 · The sum constraint (variable window)',
+  sub:'"Longest subarray whose sum is ≤ k." Now the window stretches and squeezes to stay just under the limit.',
+  presets:[
+    {nums:[3,1,2,7,4,2,1,1,5], k:8, tag:'NeetCode card · len=4'},
+    {nums:[1,1,1,1,1],         k:3, tag:'all small · len=3'},
+    {nums:[10,5,2,1],          k:8, tag:'big head · len=3'},
+    {nums:[4,4,4],             k:3, tag:'nothing fits · len=0'},
+  ],
+  whyHTML:`
+    <div class="why">
+      <b>Stretch the right, shrink the left.</b> You want the <em>longest</em> run that stays within a budget <span class="mono">k</span>. So you greedily grow the window to the right — and the moment the sum busts the budget, you shrink from the left just enough to get back under. The window's width at each legal moment is a candidate answer.
+      <br><br>
+      Real-world picture: <em>filling a backpack with a weight limit</em>, item by item along a shelf. Keep adding to the right; when you go over, drop items from the left until you're under again — and remember the most items you ever carried at once.
+      <br><br>
+      Why is this O(n) and not O(n²)? Because <span class="mono">l</span> and <span class="mono">r</span> each only ever move <em>forward</em> — neither rewinds. Every element is added once and removed at most once.
+    </div>`,
+  codeHTML:`<pre><code><span class="kw">def</span> <span class="fn">longestSumAtMost</span>(nums, k):
+    l = best = total = <span class="kw">0</span>
+    <span class="kw">for</span> r <span class="kw">in</span> <span class="fn">range</span>(<span class="fn">len</span>(nums)):
+        total += nums[r]              <span class="cmt"># expand right</span>
+        <span class="kw">while</span> total &gt; k:             <span class="cmt"># busted the budget?</span>
+            total -= nums[l]; l += <span class="kw">1</span>   <span class="cmt"># shrink left until legal again</span>
+        best = <span class="fn">max</span>(best, r - l + <span class="kw">1</span>)  <span class="cmt"># record AFTER it's legal</span>
+    <span class="kw">return</span> best</code></pre>`,
+  quizHTML:`
+    <div class="q">
+      <div class="prompt">Q1. Why does <span class="mono">best = max(best, r-l+1)</span> come <em>after</em> the while-loop, not inside it?</div>
+      <button class="reveal-btn" onclick="toggle('su_s1')">Reveal</button>
+      <div class="solution" id="su_s1">
+        Inside the while-loop the window is still <b>illegal</b> (sum &gt; k) — recording its length there would count a window that breaks the constraint. Only once the loop exits is the window guaranteed legal again, so that's the one moment its length is a valid candidate.
+      </div>
+    </div>
+    <div class="q">
+      <div class="prompt">Q2. Both <span class="mono">l</span> and <span class="mono">r</span> only move forward, never back. Why does that make the whole thing O(n)?</div>
+      <button class="reveal-btn" onclick="toggle('su_s2')">Reveal</button>
+      <div class="solution" id="su_s2">
+        <span class="mono">r</span> advances n times total; <span class="mono">l</span> advances at most n times total across the entire run. Each element enters the window once and leaves at most once → <b>O(n)</b> work, even though there's a nested while-loop. The window slides; it never restarts.
+      </div>
+    </div>`,
+
+  buildSteps(p){
+    const nums=p.nums, k=p.k, steps=[];
+    let l=0,sum=0,best=0,bestL=-1,bestR=-1;
+    steps.push({phase:'init',l:0,r:-1,sum:0,best,bestL,bestR,k});
+    for(let r=0;r<nums.length;r++){
+      sum+=nums[r];
+      steps.push({phase:'expand',l,r,sum,best,bestL,bestR,added:r,valid:sum<=k,k});
+      while(sum>k && l<=r){
+        const dropped=l; sum-=nums[l]; l++;
+        steps.push({phase:'shrink',l,r,sum,best,bestL,bestR,dropped,valid:sum<=k,k});
+      }
+      if(r-l+1>best){ best=r-l+1; bestL=l; bestR=r; }
+      steps.push({phase:'record',l,r,sum,best,bestL,bestR,valid:sum<=k,k});
+    }
+    steps.push({phase:'done',l:bestL,r:bestR,sum,best,bestL,bestR,k});
+    return steps;
+  },
+  cellClass(st,i){
+    const cls=[];
+    if(st.phase==='done'){ if(st.bestL>=0 && i>=st.bestL && i<=st.bestR) cls.push('best'); return cls; }
+    if(st.phase==='expand' && i===st.added) cls.push('added');
+    if(st.phase==='shrink' && i===st.dropped) cls.push('dropped');
+    return cls;
+  },
+  cellPtr(st,i){
+    if(st.phase==='done') return (st.bestL>=0 && i===st.bestL) ? '<span class="ptr l">best</span>' : '';
+    if(st.r<0) return '';
+    const out=[];
+    if(i===st.l) out.push('<span class="ptr l">l</span>');
+    if(i===st.r) out.push('<span class="ptr r">r</span>');
+    return out.join('');
+  },
+  renderExtra(st, host, nums){
+    if(st.phase==='done' || st.phase==='init'){ host.innerHTML = st.phase==='init' ? sumGauge(0,st.k) : ''; return; }
+    host.innerHTML = sumGauge(st.sum, st.k);
+  },
+  renderReadout(st, host, nums){
+    if(st.phase==='done'){
+      if(st.bestL<0){ host.innerHTML = `<span class="lead">longest valid window:</span> <b class="best">0</b> <span class="lead">— no single element fits under k=${st.k}.</span>`; return; }
+      host.innerHTML = `<span class="lead">longest window with sum ≤ ${st.k}:</span> <b class="best">${st.best}</b> <span class="lead">at [${st.bestL}, ${st.bestR}] = [${nums.slice(st.bestL,st.bestR+1).join(',')}]</span>`;
+      return;
+    }
+    const cmp = st.sum<=st.k ? `<span class="g">≤ ${st.k} ✓</span>` : `<span class="r">&gt; ${st.k} ✗</span>`;
+    host.innerHTML = `<span class="lead">window sum:</span> <b>${st.sum}</b> ${cmp} &nbsp;·&nbsp; <span class="lead">longest legal so far:</span> <span class="best">${st.best}</span>`;
+  },
+  stage(st, nums){
+    if(st.phase==='init')   return {badge:'START', cls:'live', text:`Empty window. We'll grow it rightward and shrink from the left whenever the sum exceeds <b>k=${st.k}</b>.`};
+    if(st.phase==='expand') return {badge:'EXPAND', cls:'expand', text:`Add <b>${nums[st.added]}</b> on the right → sum <b>${st.sum}</b>. ${st.valid?`<span class="g">Still ≤ ${st.k}.</span>`:`<span class="r">Over budget — must shrink.</span>`}`};
+    if(st.phase==='shrink') return {badge:'SHRINK', cls:'shrink', text:`Over k. Drop <b>${nums[st.dropped]}</b> from the left → sum <b>${st.sum}</b>. ${st.valid?`<span class="g">Back under ${st.k}.</span>`:`Still over — keep shrinking.`}`};
+    if(st.phase==='record') return {badge:'RECORD', cls:'record', text:`Legal window [${st.l}, ${st.r}], width <b>${st.r-st.l+1}</b>. ${st.bestL===st.l&&st.bestR===st.r&&st.bestL>=0?`<span class="g">New longest!</span>`:`Best stays ${st.best}.`}`};
+    if(st.phase==='done')   return {badge:'DONE', cls:'found', text:st.bestL<0?`No window fits under ${st.k}. Answer <b>0</b>.`:`Longest subarray with sum ≤ ${st.k} has length <b>${st.best}</b>.`};
+    return {badge:'START', cls:'live', text:''};
+  },
+  isChars:false,
+});
+
+/* a sum gauge: a bar that fills toward k and turns red past it */
+function sumGauge(sum, k){
+  const pct = Math.min(100, (sum/k)*100);
+  const over = sum>k;
+  const barColor = over ? 'var(--red)' : 'var(--teal)';
+  const overWidth = over ? Math.min(100, ((sum-k)/k)*100) : 0;
+  return `<div style="max-width:420px;margin:0 auto;text-align:center">
+    <div style="font-family:'SF Mono',Menlo,monospace;font-size:13px;color:var(--muted);margin-bottom:6px">sum <b style="color:${over?'var(--red)':'var(--teal)'};font-size:15px">${sum}</b> vs budget k=${k}</div>
+    <div style="position:relative;height:18px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;overflow:hidden">
+      <div style="position:absolute;left:${100*k/(k+ (over?(sum-k):0) || 1)}%;display:none"></div>
+      <div style="height:100%;width:${pct}%;background:${barColor};transition:.3s"></div>
+      <div style="position:absolute;top:0;right:0;height:100%;width:${overWidth}%;background:repeating-linear-gradient(45deg,var(--red),var(--red) 4px,#b91c1c 4px,#b91c1c 8px);opacity:.7"></div>
+      <div style="position:absolute;top:-2px;left:100%;transform:translateX(-100%);height:22px;border-left:2px dashed var(--yellow)"></div>
+    </div>
+    <div style="font-family:'SF Mono',Menlo,monospace;font-size:11px;color:var(--muted);margin-top:4px">${over?`<span class="r">over by ${sum-k} — shrink left</span>`:`<span class="g">within budget</span>`} · the dashed yellow line is the k limit</div>
+  </div>`;
+}
+
+/* ---------------------------------------------------------------------
+   VARIATION 3 — VARIABLE WINDOW, LONGEST substring with ≤ N of a char
+   --------------------------------------------------------------------- */
+VARIATIONS.push({
+  id:'count',
+  tabLabel:'Count constraint',
+  tabHint:'≤ N of a char',
+  title:'3 · The number-of-something constraint (variable window)',
+  sub:'"Longest substring with at most N copies of a target character." Same stretch-and-shrink — but the thing you cap is a count, not a sum.',
+  presets:[
+    {s:'lltllttlll', target:'l', N:1, tag:'NeetCode card · ≤1 "l" · len=3'},
+    {s:'aabbccdd',   target:'a', N:2, tag:'≤2 "a" · len=8'},
+    {s:'aaabbb',     target:'a', N:1, tag:'≤1 "a" · len=4'},
+    {s:'zzzz',       target:'z', N:0, tag:'≤0 "z" · len=0'},
+  ],
+  whyHTML:`
+    <div class="why">
+      <b>Cap a count instead of a sum.</b> This is variation 2 with one swap: the budget is "how many of a target thing (a character, a zero, a vowel…) the window may contain." Grow right; whenever the window holds more than <span class="mono">N</span> of the target, shrink left until you're back at or under <span class="mono">N</span>. The longest legal window is the answer.
+      <br><br>
+      Real-world picture: a <em>tolerance budget</em> — "I'll allow at most one defect in a row of parts." Keep extending the run; if a second defect shows up, slide the start forward past the first one so you're back to one. Recognising that <em>"at most N of X"</em> is the same machine as <em>"sum ≤ k"</em> is the whole insight.
+    </div>`,
+  codeHTML:`<pre><code><span class="kw">def</span> <span class="fn">longestAtMostN</span>(s, target, N):
+    l = best = count = <span class="kw">0</span>
+    <span class="kw">for</span> r <span class="kw">in</span> <span class="fn">range</span>(<span class="fn">len</span>(s)):
+        <span class="kw">if</span> s[r] == target: count += <span class="kw">1</span>   <span class="cmt"># expand right</span>
+        <span class="kw">while</span> count &gt; N:                  <span class="cmt"># too many of the target?</span>
+            <span class="kw">if</span> s[l] == target: count -= <span class="kw">1</span>
+            l += <span class="kw">1</span>                         <span class="cmt"># shrink left until ≤ N</span>
+        best = <span class="fn">max</span>(best, r - l + <span class="kw">1</span>)
+    <span class="kw">return</span> best</code></pre>`,
+  quizHTML:`
+    <div class="q">
+      <div class="prompt">Q1. In <span class="mono">"lltllttlll"</span> with ≤1 <span class="mono">'l'</span>, the answer window is <span class="mono">"ltt"</span> (len 3). Which other "thing" could this exact same code count without any change?</div>
+      <button class="reveal-btn" onclick="toggle('co_s1')">Reveal</button>
+      <div class="solution" id="co_s1">
+        Anything you can test per element: <b>at most N zeros</b>, <b>at most N vowels</b>, <b>at most N elements above some threshold</b>. Swap the <span class="mono">if s[r] == target</span> test for your predicate and the machine is identical. That's why this is one <em>variation</em>, not five separate problems.
+      </div>
+    </div>
+    <div class="q">
+      <div class="prompt">Q2. This is structurally the same as variation 2 (sum ≤ k). What's the single difference?</div>
+      <button class="reveal-btn" onclick="toggle('co_s2')">Reveal</button>
+      <div class="solution" id="co_s2">
+        The <b>quantity being constrained</b>. V2 caps a running <em>sum</em>; V3 caps a running <em>count of a target</em>. Expand-right / shrink-left-on-violation / record-when-legal is identical. Recognise the shared skeleton and you've collapsed two "different" problems into one.
+      </div>
+    </div>`,
+
+  buildSteps(p){
+    const s=p.s, target=p.target, N=p.N, steps=[];
+    let l=0,cnt=0,best=0,bestL=-1,bestR=-1;
+    steps.push({phase:'init',l:0,r:-1,count:0,best,bestL,bestR,target,N});
+    for(let r=0;r<s.length;r++){
+      if(s[r]===target) cnt++;
+      steps.push({phase:'expand',l,r,count:cnt,best,bestL,bestR,added:r,target,N,isTarget:s[r]===target});
+      while(cnt>N && l<=r){
+        if(s[l]===target) cnt--;
+        const dropped=l; l++;
+        steps.push({phase:'shrink',l,r,count:cnt,best,bestL,bestR,dropped,target,N});
+      }
+      if(r-l+1>best){ best=r-l+1; bestL=l; bestR=r; }
+      steps.push({phase:'record',l,r,count:cnt,best,bestL,bestR,target,N});
+    }
+    steps.push({phase:'done',l:bestL,r:bestR,count:cnt,best,bestL,bestR,target,N});
+    return steps;
+  },
+  cellClass(st,i,nums){
+    const cls=[];
+    const isTarget = nums[i]===st.target;
+    if(st.phase==='done'){ if(st.bestL>=0 && i>=st.bestL && i<=st.bestR){ cls.push('best'); } return cls; }
+    const inWin = i>=st.l && i<=st.r;
+    if(isTarget && inWin) cls.push('target');
+    if(st.phase==='expand' && i===st.added) cls.push('added');
+    if(st.phase==='shrink' && i===st.dropped) cls.push('dropped');
+    return cls;
+  },
+  cellPtr(st,i){
+    if(st.phase==='done') return (st.bestL>=0 && i===st.bestL) ? '<span class="ptr l">best</span>' : '';
+    if(st.r<0) return '';
+    const out=[];
+    if(i===st.l) out.push('<span class="ptr l">l</span>');
+    if(i===st.r) out.push('<span class="ptr r">r</span>');
+    return out.join('');
+  },
+  renderExtra(st, host){
+    const over = st.count>st.N;
+    host.innerHTML = `<div style="text-align:center">
+      <span style="display:inline-block;padding:6px 16px;border-radius:20px;font-family:'SF Mono',Menlo,monospace;font-size:14px;font-weight:700;border:2px solid ${over?'var(--red)':'var(--teal)'};background:${over?'rgba(248,113,113,.14)':'rgba(45,212,191,.1)'};color:${over?'var(--red)':'var(--teal)'}">
+        count of '${st.target}' in window = ${st.count} / max ${st.N}
+      </span>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;font-family:-apple-system,sans-serif">${over?'<span class="r">too many — shrink left until ≤ '+st.N+'</span>':'within the cap'} · purple-tinted cells are the target char</div>
+    </div>`;
+  },
+  renderReadout(st, host, nums){
+    if(st.phase==='done'){
+      if(st.bestL<0){ host.innerHTML = `<span class="lead">longest valid window:</span> <b class="best">0</b>`; return; }
+      host.innerHTML = `<span class="lead">longest substring with ≤ ${st.N} '${st.target}':</span> <b class="best">${st.best}</b> <span class="lead">= "${nums.slice(st.bestL,st.bestR+1).join('')}" at [${st.bestL}, ${st.bestR}]</span>`;
+      return;
+    }
+    host.innerHTML = `<span class="lead">window:</span> <b>"${nums.slice(st.l,st.r+1).join('')}"</b> (len ${st.r<st.l?0:st.r-st.l+1}) &nbsp;·&nbsp; <span class="lead">longest legal so far:</span> <span class="best">${st.best}</span>`;
+  },
+  stage(st, nums){
+    if(st.phase==='init')   return {badge:'START', cls:'live', text:`Empty window. Grow rightward; shrink whenever the window holds more than <b>${st.N}</b> of '${st.target}'.`};
+    if(st.phase==='expand') return {badge:'EXPAND', cls:'expand', text:`Add '<b>${nums[st.added]}</b>' on the right. ${st.isTarget?`It's the target → count now <b>${st.count}</b>.`:`Not the target → count stays <b>${st.count}</b>.`} ${st.count<=st.N?`<span class="g">≤ ${st.N} ✓</span>`:`<span class="r">over the cap.</span>`}`};
+    if(st.phase==='shrink') return {badge:'SHRINK', cls:'shrink', text:`Too many '${st.target}'. Drop '<b>${nums[st.dropped]}</b>' from the left → count <b>${st.count}</b>. ${st.count<=st.N?`<span class="g">Back to ≤ ${st.N}.</span>`:`Still over.`}`};
+    if(st.phase==='record') return {badge:'RECORD', cls:'record', text:`Legal window "${nums.slice(st.l,st.r+1).join('')}", width <b>${st.r-st.l+1}</b>. ${st.bestL===st.l&&st.bestR===st.r&&st.bestL>=0?`<span class="g">New longest!</span>`:`Best stays ${st.best}.`}`};
+    if(st.phase==='done')   return {badge:'DONE', cls:'found', text:st.bestL<0?`Nothing fits. Answer <b>0</b>.`:`Longest substring with ≤ ${st.N} '${st.target}' has length <b>${st.best}</b>.`};
+    return {badge:'START', cls:'live', text:''};
+  },
+  isChars:true,
+});
+
+/* ---------------------------------------------------------------------
+   VARIATION 4 — VARIABLE WINDOW, LONGEST substring with NO repeats (LC#3)
+   --------------------------------------------------------------------- */
+VARIATIONS.push({
+  id:'norepeat',
+  tabLabel:'Not-repeated',
+  tabHint:'no duplicates',
+  title:'4 · The not-repeated constraint (longest substring, no duplicates)',
+  sub:'"Longest substring with no repeating characters." When a repeat appears, jump the left edge straight past the previous copy.',
+  presets:[
+    {s:'zxyzxyz', tag:'NeetCode card · len=3'},
+    {s:'abcabcbb', tag:'classic · len=3'},
+    {s:'pwwkew',  tag:'len=3 ("wke")'},
+    {s:'abba',    tag:'jump trap · len=2'},
+  ],
+  whyHTML:`
+    <div class="why">
+      <b>On a repeat, teleport the left edge — don't crawl.</b> You want the longest run with all-distinct characters. Grow right as usual; the instant the new char already exists <em>inside the current window</em>, the window is illegal. Instead of shrinking one step at a time, you <b>jump <span class="mono">l</span> to just past the previous occurrence</b> — in one move the duplicate is gone.
+      <br><br>
+      Real-world picture: reading a hallway of doors, remembering the <em>last room number</em> you saw each label on. When you hit a label you've already passed <em>since your start point</em>, you don't back up one door at a time — you stride forward to right after where you last saw it.
+      <br><br>
+      The subtle bug to avoid: only jump if the previous copy is <em>still inside</em> the window (<span class="mono">last[c] ≥ l</span>). If it already fell out, leave <span class="mono">l</span> alone — never move it backwards. That's why the code uses <span class="mono">l = max(l, last[c]+1)</span>.
+    </div>`,
+  codeHTML:`<pre><code><span class="kw">def</span> <span class="fn">longestNoRepeat</span>(s):
+    last = {}                       <span class="cmt"># char -&gt; its most recent index</span>
+    l = best = <span class="kw">0</span>
+    <span class="kw">for</span> r, c <span class="kw">in</span> <span class="fn">enumerate</span>(s):
+        <span class="kw">if</span> c <span class="kw">in</span> last <span class="kw">and</span> last[c] &gt;= l:   <span class="cmt"># dup still inside window?</span>
+            l = last[c] + <span class="kw">1</span>          <span class="cmt"># jump past it (never backwards)</span>
+        last[c] = r
+        best = <span class="fn">max</span>(best, r - l + <span class="kw">1</span>)
+    <span class="kw">return</span> best</code></pre>`,
+  quizHTML:`
+    <div class="q">
+      <div class="prompt">Q1. For <span class="mono">"abba"</span>: when you reach the second <span class="mono">'a'</span> (index 3), <span class="mono">last['a']=0</span>. Why must you NOT set <span class="mono">l = 0+1 = 1</span>?</div>
+      <button class="reveal-btn" onclick="toggle('nr_s1')">Reveal</button>
+      <div class="solution" id="nr_s1">
+        By index 3, the second <span class="mono">'b'</span> already pushed <span class="mono">l</span> to <b>2</b>. The old <span class="mono">'a'</span> at index 0 is <em>already outside</em> the window, so it's not a real duplicate anymore. Setting <span class="mono">l=1</span> would move <span class="mono">l</span> <b>backwards</b> and wrongly re-admit index 1. The guard <span class="mono">last[c] &gt;= l</span> (0 ≥ 2 is false) prevents the jump; <span class="mono">l = max(l, last[c]+1)</span> keeps it at 2.
+      </div>
+    </div>
+    <div class="q">
+      <div class="prompt">Q2. <span class="mono">"zxyzxyz"</span> has several length-3 answers (<span class="mono">zxy</span>, <span class="mono">xyz</span>, …). What does this code actually return, and what's the real answer?</div>
+      <button class="reveal-btn" onclick="toggle('nr_s2')">Reveal</button>
+      <div class="solution" id="nr_s2">
+        The <b>length</b>, which is <b>3</b> — that's the answer the problem asks for. Several windows tie at length 3; since <span class="mono">best</span> updates only on a strictly longer window, the code reports the <em>first</em> one it reaches (<span class="mono">"zxy"</span>). The specific substring is arbitrary among the ties; the length is what's well-defined.
+      </div>
+    </div>`,
+
+  buildSteps(p){
+    const s=p.s, steps=[]; const last={}; let l=0,best=0,bestL=-1,bestR=-1;
+    steps.push({phase:'init',l:0,r:-1,best,bestL,bestR,map:{}});
+    for(let r=0;r<s.length;r++){
+      const c=s[r];
+      let jumped=false, dup=-1, oldL=l;
+      if(last[c]!==undefined && last[c]>=l){ dup=last[c]; l=last[c]+1; jumped=true; }
+      last[c]=r;
+      if(r-l+1>best){ best=r-l+1; bestL=l; bestR=r; }
+      steps.push({phase: jumped?'expand-jump':'expand-clean', l, r, c, dup, oldL, best, bestL, bestR, map:Object.assign({},last)});
+    }
+    steps.push({phase:'done', l:bestL, r:bestR, best, bestL, bestR, map:Object.assign({},last)});
+    return steps;
+  },
+  cellClass(st,i){
+    const cls=[];
+    if(st.phase==='done'){ if(st.bestL>=0 && i>=st.bestL && i<=st.bestR) cls.push('best'); return cls; }
+    if(st.r<0) return cls;
+    if(i===st.r) cls.push('added');
+    if(st.phase==='expand-jump'){
+      if(i===st.dup) cls.push('dup');               // the previous occurrence we jumped past
+      if(i>=st.oldL && i<st.l) cls.push('dropped');  // cells skipped by the jump
+    }
+    return cls;
+  },
+  cellPtr(st,i){
+    if(st.phase==='done') return (st.bestL>=0 && i===st.bestL) ? '<span class="ptr l">best</span>' : '';
+    if(st.r<0) return '';
+    const out=[];
+    if(i===st.l) out.push('<span class="ptr l">l</span>');
+    if(i===st.r) out.push('<span class="ptr r">r</span>');
+    return out.join('');
+  },
+  renderExtra(st, host, nums){
+    // char -> last-seen-index chip map
+    const entries = Object.keys(st.map).sort();
+    let chips = entries.map(ch=>{
+      const idx=st.map[ch];
+      const isDup = st.phase==='expand-jump' && ch===st.c;
+      return `<span style="display:inline-flex;flex-direction:column;align-items:center;gap:1px;padding:5px 9px;border-radius:8px;font-family:'SF Mono',Menlo,monospace;border:2px solid ${isDup?'var(--red)':'var(--border)'};background:${isDup?'rgba(248,113,113,.15)':'var(--surface2)'};${isDup?'animation:pop .35s ease;':''}">
+        <span style="font-weight:700;font-size:14px;color:${isDup?'var(--red)':'var(--text)'}">${esc(ch)}</span>
+        <span style="font-size:10px;color:var(--muted)">@${idx}</span>
+      </span>`;
+    }).join('');
+    let note = '';
+    if(st.phase==='expand-jump'){
+      note = `<div style="font-size:12px;color:var(--red);margin-top:8px;font-family:-apple-system,sans-serif">'${esc(st.c)}' already at index ${st.dup} (inside window) → jump <b>l</b> from ${st.oldL} to ${st.l}, past the duplicate</div>`;
+    } else if(st.phase==='expand-clean' && st.r>=0){
+      note = `<div style="font-size:12px;color:var(--muted);margin-top:8px;font-family:-apple-system,sans-serif">'${esc(st.c)}' is new to the window → just extend right</div>`;
+    } else if(st.phase==='init'){
+      note = `<div style="font-size:12px;color:var(--muted);margin-top:8px;font-family:-apple-system,sans-serif">the map remembers each character's most recent index</div>`;
+    }
+    host.innerHTML = `<div style="text-align:center">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:7px;font-family:-apple-system,sans-serif">last-seen index of each character</div>
+      <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;min-height:42px">${chips||'<span style="color:var(--muted);font-size:12px">(empty)</span>'}</div>
+      ${note}
+    </div>`;
+  },
+  renderReadout(st, host, nums){
+    if(st.phase==='done'){
+      if(st.bestL<0){ host.innerHTML = `<span class="lead">longest distinct substring:</span> <b class="best">0</b>`; return; }
+      host.innerHTML = `<span class="lead">longest substring with no repeats:</span> <b class="best">${st.best}</b> <span class="lead">(one such window: "${nums.slice(st.bestL,st.bestR+1).join('')}" at [${st.bestL}, ${st.bestR}])</span>`;
+      return;
+    }
+    if(st.r<0){ host.innerHTML = `<span class="lead">window:</span> <b>(empty)</b>`; return; }
+    host.innerHTML = `<span class="lead">window:</span> <b>"${nums.slice(st.l,st.r+1).join('')}"</b> (all distinct, len ${st.r-st.l+1}) &nbsp;·&nbsp; <span class="lead">longest so far:</span> <span class="best">${st.best}</span>`;
+  },
+  stage(st, nums){
+    if(st.phase==='init')        return {badge:'START', cls:'live', text:`Empty window + an empty last-seen map. Extend right; on a duplicate, jump <b>l</b> past the old copy.`};
+    if(st.phase==='expand-clean')return {badge:'EXTEND', cls:'expand', text:`'<b>${nums[st.r]}</b>' is new to the window → just extend. Window "${nums.slice(st.l,st.r+1).join('')}", len <b>${st.r-st.l+1}</b>. ${st.bestL===st.l&&st.bestR===st.r?'<span class="g">New longest!</span>':''}`};
+    if(st.phase==='expand-jump') return {badge:'JUMP L', cls:'shrink', text:`'<b>${nums[st.r]}</b>' repeats — last seen at index <b>${st.dup}</b>. Jump <b>l</b> from ${st.oldL} → <b>${st.l}</b> (past the duplicate), not one step at a time. Window now "${nums.slice(st.l,st.r+1).join('')}".`};
+    if(st.phase==='done')        return {badge:'DONE', cls:'found', text:st.bestL<0?`Empty string → <b>0</b>.`:`Longest substring with no repeats has length <b>${st.best}</b>.`};
+    return {badge:'START', cls:'live', text:''};
+  },
+  isChars:true,
+});
+
+/* ---------------------------------------------------------------------
+   VARIATION 5 — VARIABLE WINDOW, COUNT subarrays with product < k
+   --------------------------------------------------------------------- */
+VARIATIONS.push({
+  id:'countsub',
+  tabLabel:'Count subarrays',
+  tabHint:'product < k',
+  title:'5 · The number-of-subarrays constraint (counting, not measuring)',
+  sub:'"How many subarrays have a product strictly less than k?" Here you don\'t track a best length — you accumulate a count.',
+  presets:[
+    {nums:[10,5,2,6], k:100, tag:'NeetCode card · count=8'},
+    {nums:[1,2,3],    k:0,   tag:'k≤1 · count=0'},
+    {nums:[1,1,1],    k:2,   tag:'all 1s · count=6'},
+    {nums:[10,3,3],   k:9,   tag:'a value blocks · count=2'},
+  ],
+  whyHTML:`
+    <div class="why">
+      <b>Each new legal window adds exactly its width in subarrays.</b> This one looks different — you're <em>counting</em> subarrays, not measuring a longest one. The key realization: keep a window <span class="mono">[l, r]</span> where the product stays under <span class="mono">k</span>. When you extend to a new <span class="mono">r</span>, every <em>new</em> valid subarray ends at <span class="mono">r</span>: they are <span class="mono">[l..r], [l+1..r], …, [r..r]</span> — and there are exactly <span class="mono">(r − l + 1)</span> of them. So you add the window's width to the running total.
+      <br><br>
+      Why no double-counting? Because we only ever count subarrays that <em>end at the current r</em>. Each subarray has exactly one right endpoint, so it's counted at exactly one step. Across all r, every valid subarray is counted once.
+      <br><br>
+      The order matters: shrink the window until it's legal <em>first</em>, then <span class="mono">res += r - l + 1</span>. Counting before shrinking would tally invalid windows.
+    </div>`,
+  codeHTML:`<pre><code><span class="kw">def</span> <span class="fn">numSubarraysProductLessThanK</span>(nums, k):
+    <span class="kw">if</span> k &lt;= <span class="kw">1</span>: <span class="kw">return</span> <span class="kw">0</span>       <span class="cmt"># no positive product is &lt; 1</span>
+    l = res = <span class="kw">0</span>; prod = <span class="kw">1</span>
+    <span class="kw">for</span> r <span class="kw">in</span> <span class="fn">range</span>(<span class="fn">len</span>(nums)):
+        prod *= nums[r]              <span class="cmt"># expand right</span>
+        <span class="kw">while</span> prod &gt;= k <span class="kw">and</span> l &lt;= r:   <span class="cmt"># shrink until legal</span>
+            prod //= nums[l]; l += <span class="kw">1</span>
+        res += r - l + <span class="kw">1</span>          <span class="cmt"># every new subarray ends at r</span>
+    <span class="kw">return</span> res</code></pre>`,
+  quizHTML:`
+    <div class="q">
+      <div class="prompt">Q1. Why does a legal window <span class="mono">[l, r]</span> contribute exactly <span class="mono">(r − l + 1)</span> new subarrays — and why no double-counting across steps?</div>
+      <button class="reveal-btn" onclick="toggle('cs_s1')">Reveal</button>
+      <div class="solution" id="cs_s1">
+        The <b>new</b> subarrays (not counted before) are precisely those <b>ending at r</b>: <span class="mono">[l..r], [l+1..r], …, [r..r]</span> — that's <span class="mono">r−l+1</span> of them, all with product &lt; k (since they're sub-blocks of a legal window). Every subarray has exactly one right endpoint, so it's tallied at exactly one value of r. No overlap, nothing missed.
+      </div>
+    </div>
+    <div class="q">
+      <div class="prompt">Q2. Why must <span class="mono">res += r-l+1</span> happen AFTER the while-loop shrinks the window?</div>
+      <button class="reveal-btn" onclick="toggle('cs_s2')">Reveal</button>
+      <div class="solution" id="cs_s2">
+        Before shrinking, the product might still be ≥ k — the window is illegal, and counting its sub-blocks would include subarrays whose product is too big. Shrinking first guarantees <span class="mono">[l, r]</span> is valid, so all <span class="mono">r−l+1</span> subarrays ending at r are genuinely &lt; k.
+      </div>
+    </div>`,
+
+  buildSteps(p){
+    const nums=p.nums, k=p.k, steps=[];
+    let l=0,prod=1,res=0;
+    steps.push({phase:'init',l:0,r:-1,prod:1,res:0,k});
+    if(k<=1){ steps.push({phase:'done',l:0,r:-1,prod:1,res:0,k}); return steps; }
+    for(let r=0;r<nums.length;r++){
+      prod*=nums[r];
+      steps.push({phase:'expand',l,r,prod,res,added:r,k});
+      while(prod>=k && l<=r){
+        const dropped=l; prod/=nums[l]; l++;
+        steps.push({phase:'shrink',l,r,prod,res,dropped,k});
+      }
+      const add=r-l+1;
+      res+=add;
+      steps.push({phase:'count',l,r,prod,res,add,k});
+    }
+    steps.push({phase:'done',l,r:nums.length-1,prod,res,k});
+    return steps;
+  },
+  cellClass(st,i){
+    const cls=[];
+    if(st.phase==='done') return cls;
+    if(st.r<0) return cls;
+    if(st.phase==='expand' && i===st.added) cls.push('added');
+    if(st.phase==='shrink' && i===st.dropped) cls.push('dropped');
+    return cls;
+  },
+  cellPtr(st,i){
+    if(st.phase==='done' || st.r<0) return '';
+    const out=[];
+    if(i===st.l) out.push('<span class="ptr l">l</span>');
+    if(i===st.r) out.push('<span class="ptr r">r</span>');
+    return out.join('');
+  },
+  renderExtra(st, host, nums){
+    if(st.phase==='done' || st.phase==='init'){ host.innerHTML=''; return; }
+    // product readout always; on 'count' phase, enumerate the new subarrays ending at r
+    const over = st.prod>=st.k;
+    let prodLine = `<div style="font-family:'SF Mono',Menlo,monospace;font-size:14px;text-align:center;color:var(--muted)">window product <b style="color:${over?'var(--red)':'var(--teal)'};font-size:16px">${st.prod}</b> ${over?`<span class="r">≥ ${st.k} — shrink</span>`:`<span class="g">&lt; ${st.k} ✓</span>`}</div>`;
+    let callout='';
+    if(st.phase==='count'){
+      // enumerate [l..r], [l+1..r], ..., [r..r]
+      const strips=[];
+      for(let start=st.l; start<=st.r; start++){
+        const vals=nums.slice(start,st.r+1).join(',');
+        strips.push(`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border:1px solid var(--green);border-radius:7px;background:rgba(74,222,128,.1);font-family:'SF Mono',Menlo,monospace;font-size:12px;color:var(--text)"><span style="color:var(--green);font-weight:700">✓</span>[${vals}]</span>`);
+      }
+      callout = `<div style="margin-top:12px;text-align:center">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-family:-apple-system,sans-serif">this legal window adds <b style="color:var(--green)">${st.add}</b> new subarrays — all ending at index ${st.r}:</div>
+        <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">${strips.join('')}</div>
+        <div style="margin-top:8px;font-family:'SF Mono',Menlo,monospace;font-size:13px">res += (r−l+1) = +${st.add} ⇒ running total <b style="color:var(--yellow);font-size:16px">${st.res}</b></div>
+      </div>`;
+    }
+    host.innerHTML = prodLine + callout;
+  },
+  renderReadout(st, host, nums){
+    if(st.phase==='done'){
+      host.innerHTML = `<span class="lead">subarrays with product ${st.k<=1?'< '+st.k:'< '+st.k}:</span> <b class="best">${st.res}</b> <span class="lead">total</span>`;
+      return;
+    }
+    if(st.phase==='init'){ host.innerHTML = `<span class="lead">running count:</span> <b>0</b> ${st.k<=1?'<span class="r">(k≤1 → no positive product is &lt; '+st.k+', answer is 0)</span>':''}`; return; }
+    host.innerHTML = `<span class="lead">running count of valid subarrays:</span> <b class="best">${st.res}</b>`;
+  },
+  stage(st, nums){
+    if(st.phase==='init')   return {badge:'START', cls:'live', text:st.k<=1?`k=${st.k} ≤ 1 → no subarray of positive ints can have product &lt; ${st.k}. Answer is <b>0</b>.`:`Empty window, running count 0. Extend right; shrink until product &lt; <b>${st.k}</b>; then count.`};
+    if(st.phase==='expand') return {badge:'EXPAND', cls:'expand', text:`Multiply in <b>${nums[st.added]}</b> → product <b>${st.prod}</b>. ${st.prod<st.k?`<span class="g">Already &lt; ${st.k}.</span>`:`<span class="r">≥ ${st.k} — must shrink first.</span>`}`};
+    if(st.phase==='shrink') return {badge:'SHRINK', cls:'shrink', text:`Product too big. Divide out <b>${nums[st.dropped]}</b> from the left → product <b>${st.prod}</b>. ${st.prod<st.k?`<span class="g">Now legal.</span>`:`Still ≥ ${st.k}.`}`};
+    if(st.phase==='count')  return {badge:'COUNT', cls:'record', text:`Legal window [${st.l}, ${st.r}], width <b>${st.add}</b> → it contributes <b>${st.add}</b> new subarrays (each ending at ${st.r}). Running total <b>${st.res}</b>.`};
+    if(st.phase==='done')   return {badge:'DONE', cls:'found', text:`<b>${st.res}</b> subarrays have product &lt; ${st.k}.`};
+    return {badge:'START', cls:'live', text:''};
+  },
+  isChars:false,
+});
+
+/* =====================================================================
+   SHARED ENGINE — switcher, dispatch, controls, keyboard
+   ===================================================================== */
+let V=0;            // active variation index
+let presetIdx=0;
+let nums=[];        // current input (numbers or chars)
+let steps=[];
+let step=0;
+let MAXSTEP=0;
+
+function curMod(){ return VARIATIONS[V]; }
+
+function selectVariation(i){
+  V=i;
+  const m=VARIATIONS[i];
+  document.getElementById('vTitle').textContent = m.title;
+  document.getElementById('vSub').textContent = m.sub;
+  document.getElementById('whyBox').innerHTML = m.whyHTML;
+  document.getElementById('codeBox').innerHTML = m.codeHTML;
+  document.getElementById('quizBox').innerHTML = m.quizHTML;
+  document.querySelectorAll('.vtab').forEach((el,idx)=>el.classList.toggle('sel', idx===i));
+  // rebuild presets
+  document.getElementById('presets').innerHTML = m.presets.map((p,idx)=>{
+    const label = m.isChars ? `"${p.s}"` : `[${p.nums.join(',')}]${p.k!==undefined?` k=${p.k}`:''}`;
+    return `<button class="preset ${idx===0?'sel':''}" onclick="loadPreset(${idx})">${esc(label)}<span class="tag">${esc(p.tag)}</span></button>`;
+  }).join('');
+  loadPreset(0);
+}
+
+function loadPreset(p){
+  presetIdx=p;
+  const m=VARIATIONS[V], pre=m.presets[p];
+  nums = m.isChars ? pre.s.split('') : pre.nums;
+  steps = m.buildSteps(pre);
+  MAXSTEP = steps.length-1;
+  step=0;
+  document.querySelectorAll('.preset').forEach((el,idx)=>el.classList.toggle('sel', idx===p));
+  render();
+}
+
+function setStage(badge, text, cls){
+  const b=document.getElementById('stageBadge');
+  b.textContent=badge;
+  b.className='stage-badge'+(cls?' '+cls:'');
+  document.getElementById('stageText').innerHTML=text;
+}
+
+function render(){
+  const m=curMod(), st=steps[step];
+  document.getElementById('stepcount').textContent = `Step ${step} / ${MAXSTEP}`;
+  document.getElementById('backBtn').disabled = step===0;
+  const sb=document.getElementById('stepBtn');
+  sb.disabled = step>=MAXSTEP;
+  sb.textContent = step>=MAXSTEP ? 'Done ✓' : 'Step ▶';
+
+  // base cells: window membership + per-variation extra classes + pointers
+  const cells = nums.map((v,i)=>{
+    const inWin = i>=st.l && i<=st.r;
+    let cls = inWin ? 'win' : 'dim';
+    if(i===st.l && st.phase!=='done') cls+=' atL';
+    if(i===st.r && st.phase!=='done') cls+=' atR';
+    const extra = m.cellClass(st,i,nums);
+    if(extra.length) cls += ' '+extra.join(' ');
+    const ptr = m.cellPtr(st,i,nums) || '&nbsp;';
+    return `<div class="cellbox">
+        <div class="cell ${cls}">${esc(v)}</div>
+        <div class="idx">${i}</div>
+        <div style="display:flex;gap:4px">${ptr}</div>
+      </div>`;
+  }).join('');
+  document.getElementById('arr').innerHTML = cells;
+
+  m.renderExtra(st, document.getElementById('vizExtra'), nums);
+  m.renderReadout(st, document.getElementById('readout'), nums);
+  const s = m.stage(st, nums);
+  setStage(s.badge, s.text, s.cls);
+}
+
+function next(){ if(step<MAXSTEP){ step++; render(); } }
+function prev(){ if(step>0){ step--; render(); } }
+function resetSteps(){ step=0; render(); }
+function toggle(id){ document.getElementById(id).classList.toggle('show'); }
+
+document.addEventListener('keydown', e=>{
+  if(e.key==='ArrowRight' || e.key===' '){ e.preventDefault(); next(); }
+  else if(e.key==='ArrowLeft'){ e.preventDefault(); prev(); }
+  else if(e.key==='r' || e.key==='R'){ resetSteps(); }
+});
+
+// build variation tabs
+function buildTabs(){
+  document.getElementById('varswitcher').innerHTML = VARIATIONS.map((m,i)=>
+    `<button class="vtab ${i===0?'sel':''}" onclick="selectVariation(${i})"><span class="vnum">Variation ${i+1}</span>${esc(m.tabLabel)}</button>`
+  ).join('');
+}
+
+buildTabs();
+selectVariation(0);
+</script>
+
+</body>
+</html>

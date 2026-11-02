@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Search in Rotated Sorted Array — Animated</title>
+<style>
+  :root{--bg:#0f172a;--surface:#1e293b;--surface2:#273449;--border:#334155;
+  --text:#e2e8f0;--muted:#94a3b8;--teal:#2dd4bf;--yellow:#fbbf24;
+  --red:#f87171;--green:#4ade80;--blue:#60a5fa;--purple:#a78bfa;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.6;padding-bottom:60px}
+  a{color:var(--teal);text-decoration:none}
+  code,.mono{font-family:"SF Mono",Menlo,Consolas,monospace}
+
+  /* nav */
+  .nav{position:sticky;top:0;z-index:50;background:rgba(15,23,42,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+  .nav a{color:var(--muted);font-size:14px;font-weight:500}
+  .nav a:hover{color:var(--teal)}
+  .nav .brand{color:var(--text);font-weight:700;margin-right:auto}
+
+  /* layout */
+  .wrap{max-width:1040px;margin:0 auto;padding:24px 20px}
+  h1{font-size:26px;margin-bottom:4px}
+  .sub{color:var(--muted);margin-bottom:20px;font-size:15px}
+  h2{font-size:19px;margin:34px 0 12px;color:var(--text)}
+  h2 .num{color:var(--teal);font-weight:800;margin-right:8px}
+  p{margin:10px 0}
+
+  /* prose boxes */
+  .why{background:rgba(45,212,191,.07);border-left:3px solid var(--teal);padding:14px 18px;border-radius:0 10px 10px 0;margin:18px 0;font-size:14.5px}
+  .why b{color:var(--teal)}
+  .keytake{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 22px;margin-top:26px;font-size:14.5px}
+  .keytake h3{color:var(--teal);font-size:16px;margin-bottom:10px}
+  .keytake ul{margin-left:18px}
+  .keytake li{margin:7px 0}
+  .keytake b{color:var(--yellow)}
+
+  /* stage narration */
+  .stage{display:flex;align-items:center;gap:14px;margin-bottom:14px;min-height:50px;flex-wrap:wrap}
+  .stage-badge{flex-shrink:0;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 16px;font-weight:800;font-size:14px;letter-spacing:.5px;transition:.3s}
+  .stage-badge.live{background:var(--teal);color:#0b1120;border-color:var(--teal)}
+  .stage-badge.go-left{background:var(--green);color:#0b1120;border-color:var(--green)}
+  .stage-badge.go-right{background:var(--red);color:#0b1120;border-color:var(--red)}
+  .stage-badge.found{background:var(--yellow);color:#0b1120;border-color:var(--yellow)}
+  .stage-badge.notfound{background:var(--red);color:#0b1120;border-color:var(--red)}
+  .stage-text{font-size:15px}
+  .stage-text b{color:var(--yellow)}
+  .g{color:var(--green);font-weight:700}
+  .r{color:var(--red);font-weight:700}
+
+  /* visualization card */
+  .stagearea{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:26px 22px 30px}
+  .views{display:flex;gap:30px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
+  .linear-view{flex:1 1 460px;min-width:300px}
+  .dial-view{flex:0 0 220px;display:flex;flex-direction:column;align-items:center}
+  .dial-cap{font-size:12px;color:var(--muted);margin-top:6px;text-align:center}
+  .targetbar{text-align:center;margin-bottom:18px;font-family:"SF Mono",Menlo,monospace;font-size:15px;color:var(--muted)}
+  .targetbar b{color:var(--yellow);font-size:18px}
+
+  /* linear cells */
+  .arr{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:4px 0 2px}
+  .cellbox{display:flex;flex-direction:column;align-items:center;gap:3px}
+  .cell{width:50px;height:50px;display:flex;align-items:center;justify-content:center;background:var(--surface2);border:2px solid var(--border);border-radius:10px;font-size:17px;font-weight:700;font-family:"SF Mono",Menlo,monospace;transition:.4s}
+  .cell.dim{opacity:.28;filter:grayscale(.6)}
+  .cell.win{border-color:var(--surface2);background:rgba(45,212,191,.06)}
+  .cell.sorted{background:rgba(96,165,250,.16);border-color:var(--blue)}    /* the proven-sorted half */
+  .cell.atL{box-shadow:0 0 0 1px var(--blue)}
+  .cell.atR{box-shadow:0 0 0 1px var(--purple)}
+  .cell.atM{border-color:var(--yellow);background:rgba(251,191,36,.18)}
+  .cell.answer{border-color:var(--green);background:rgba(74,222,128,.28);box-shadow:0 0 18px rgba(74,222,128,.5);animation:pop .4s ease}
+  .cell.ruled{border-color:var(--red);border-style:dashed;background:rgba(248,113,113,.1);opacity:.55;filter:none;animation:ruleout .4s ease}
+  @keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.18)}100%{transform:scale(1)}}
+  @keyframes ruleout{0%{opacity:1}100%{opacity:.55}}
+  .idx{font-size:11px;color:var(--muted);font-family:"SF Mono",Menlo,monospace}
+  .ruledtag{height:14px;font-size:10px;font-weight:700;color:var(--red);font-family:-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;white-space:nowrap}
+  .ptr{height:22px;font-size:12px;font-weight:800;font-family:"SF Mono",Menlo,monospace;display:flex;align-items:flex-start;justify-content:center}
+  .ptr.l{color:var(--blue)}.ptr.m{color:var(--yellow)}.ptr.r{color:var(--purple)}
+
+  /* dial */
+  .dial-view svg{display:block}
+
+  /* controls */
+  .controls{display:flex;gap:10px;align-items:center;margin:20px 0 4px;flex-wrap:wrap}
+  .btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:9px;cursor:pointer;font-size:14px;font-weight:700;transition:.15s}
+  .btn:hover:not(:disabled){border-color:var(--teal);color:var(--teal)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn.primary{background:var(--teal);color:#0b1120;border-color:var(--teal)}
+  .btn.primary:hover:not(:disabled){color:#0b1120}
+  .stepcount{color:var(--muted);font-size:13px;margin-left:auto;font-family:"SF Mono",Menlo,monospace}
+  .candcount{text-align:center;margin-top:14px;font-size:13.5px;color:var(--muted);font-family:"SF Mono",Menlo,monospace}
+  .candcount b{color:var(--teal);font-size:16px}
+  .candcount .lead{font-family:-apple-system,sans-serif}
+  .kbdhint{font-size:12px;color:var(--muted);margin-top:6px}
+  .kbdhint kbd{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-family:"SF Mono",Menlo,monospace;font-size:11px}
+
+  /* preset switcher */
+  .presets{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .preset{background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:8px 13px;border-radius:8px;cursor:pointer;font-size:13px;font-family:"SF Mono",Menlo,monospace;transition:.15s}
+  .preset:hover{border-color:var(--teal);color:var(--text)}
+  .preset.sel{border-color:var(--teal);color:var(--teal);background:rgba(45,212,191,.1);font-weight:700}
+  .preset .tag{display:block;font-size:10px;color:var(--muted);font-family:-apple-system,sans-serif;margin-top:2px}
+  .preset.sel .tag{color:var(--teal)}
+
+  /* code block */
+  pre{background:#0b1120;border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow-x:auto;margin:14px 0;font-size:13.5px;line-height:1.7}
+  pre code{color:var(--text)}
+  .cmt{color:var(--muted)}.kw{color:var(--purple)}.fn{color:var(--blue)}.str{color:var(--green)}
+
+  /* two-case truth table */
+  .cases{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0}
+  .case{flex:1 1 280px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;font-size:14px}
+  .case h4{font-size:14px;margin-bottom:8px}
+  .case.lcase h4{color:var(--blue)}.case.rcase h4{color:var(--purple)}
+  .case .mono{font-size:13px;color:var(--yellow)}
+
+  /* quiz */
+  .q{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:16px 20px;margin:12px 0}
+  .q .prompt{font-weight:600;font-size:15px}
+  .q .prompt .mono{color:var(--yellow)}
+  .q .reveal-btn{margin-top:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;transition:.15s}
+  .q .reveal-btn:hover{border-color:var(--teal);color:var(--teal)}
+  .q .solution{display:none;margin-top:14px;padding-top:14px;border-top:1px dashed var(--border);font-size:14.5px}
+  .q .solution.show{display:block}
+  .q .solution .mono{color:var(--teal)}
+  .q .solution b{color:var(--yellow)}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <span class="brand">Search in Rotated Sorted Array</span>
+  <a href="find-min-rotated-sorted-array.html">Find Min (sibling)</a>
+  <a href="../STRATEGY.md">DSA strategy</a>
+  <a href="../solved.md">solved.md</a>
+</nav>
+
+<div class="wrap">
+  <h1>Search in Rotated Sorted Array</h1>
+  <p class="sub">Find a <span class="mono">target</span>'s index in <span class="mono">O(log n)</span> — at each step, figure out <em>which half is sorted</em>, then check if the target lives inside it.</p>
+
+  <!-- ============ 1. INTUITION ============ -->
+  <h2><span class="num">1</span>The intuition — one half is always sorted</h2>
+  <p>A rotated sorted array is two ascending runs joined at a cliff, like <span class="mono">[4,5,6,7,0,1,2]</span>. Cut it anywhere with a midpoint <span class="mono">mid</span> and here's the magic: <b>at least one of the two halves <span class="mono">[l..mid]</span> or <span class="mono">[mid..h]</span> is fully sorted</b> — the cliff can only sit in one of them.</p>
+
+  <!-- static intuition svg -->
+  <div style="text-align:center;margin:14px 0">
+    <svg viewBox="0 0 460 130" width="100%" style="max-width:460px">
+      <polyline points="20,100 70,82 120,64 170,46" fill="none" stroke="var(--blue)" stroke-width="3"/>
+      <circle cx="20" cy="100" r="4" fill="var(--blue)"/><circle cx="70" cy="82" r="4" fill="var(--blue)"/>
+      <circle cx="120" cy="64" r="4" fill="var(--blue)"/><circle cx="170" cy="46" r="4" fill="var(--blue)"/>
+      <line x1="170" y1="46" x2="200" y2="110" stroke="var(--yellow)" stroke-width="3" stroke-dasharray="5 4"/>
+      <polyline points="200,110 250,92 300,74 350,56 400,38" fill="none" stroke="var(--purple)" stroke-width="3"/>
+      <circle cx="200" cy="110" r="5" fill="var(--yellow)"/><circle cx="250" cy="92" r="4" fill="var(--purple)"/>
+      <circle cx="300" cy="74" r="4" fill="var(--purple)"/><circle cx="350" cy="56" r="4" fill="var(--purple)"/><circle cx="400" cy="38" r="4" fill="var(--purple)"/>
+      <text x="95" y="124" fill="var(--blue)" font-size="11" text-anchor="middle">left run (sorted)</text>
+      <text x="200" y="128" fill="var(--yellow)" font-size="11" text-anchor="middle">↑ the cliff (rotation point)</text>
+      <text x="325" y="124" fill="var(--purple)" font-size="11" text-anchor="middle">right run (sorted)</text>
+    </svg>
+  </div>
+
+  <div class="why">
+    <b>The whole strategy in one line:</b> identify the sorted half, then ask "is the target inside its range?"
+    <br><br>
+    If <span class="mono">nums[mid] &gt;= nums[l]</span>, the <span style="color:var(--blue);font-weight:700">left half is sorted</span>. Is the target between <span class="mono">nums[l]</span> and <span class="mono">nums[mid]</span>? If yes, search left; if no, the target must be in the messy right half, so search right.
+    <br>
+    Otherwise the <span style="color:var(--purple);font-weight:700">right half is sorted</span>. Is the target between <span class="mono">nums[mid]</span> and <span class="mono">nums[h]</span>? If yes, search right; if no, search left.
+    <br><br>
+    Either way you throw away a whole half — but the deciding question is always asked against the <em>sorted</em> half, because only there can you reason cleanly about whether the target fits.
+  </div>
+
+  <!-- ============ 2. WALKTHROUGH ============ -->
+  <h2><span class="num">2</span>Watch it search — which half is sorted, is the target in it?</h2>
+
+  <div class="why">
+    <b>Why does narrowing find (or rule out) the target?</b> Same elimination idea as binary search, with one twist: you can't just compare <span class="mono">target</span> to <span class="mono">nums[mid]</span> (the array isn't globally sorted). So each step first <em>finds the sorted half</em> (the side without the cliff), where order is trustworthy. In that half you can say for sure whether the target's value fits inside the range. If it fits, the target — if it exists at all — is in there; otherwise it's in the other half. Every step deletes one half for a <em>proven</em> reason, so the window shrinks to nothing (target absent → <span class="mono">-1</span>) or lands on the target. Watch the <span style="color:var(--blue)">blue sorted-half</span> shading flip sides as the window moves.
+  </div>
+
+  <div class="stage">
+    <div class="stage-badge" id="stageBadge">START</div>
+    <div class="stage-text" id="stageText"></div>
+  </div>
+
+  <div class="stagearea">
+    <div class="targetbar">looking for target = <b id="targetVal"></b></div>
+    <div class="views">
+      <div class="linear-view">
+        <div class="arr" id="arr"></div>
+      </div>
+      <div class="dial-view">
+        <svg id="dial" viewBox="0 0 200 200" width="200" height="200"></svg>
+        <div class="dial-cap">Same array on a ring —<br>blue arc = the sorted half</div>
+      </div>
+    </div>
+
+    <div class="candcount" id="candcount"></div>
+
+    <div class="controls">
+      <button class="btn" id="backBtn" onclick="prev()">◀ Back</button>
+      <button class="btn primary" id="stepBtn" onclick="next()">Step ▶</button>
+      <button class="btn" onclick="resetSteps()">Reset ↺</button>
+      <span class="stepcount" id="stepcount"></span>
+    </div>
+    <div class="kbdhint">Keyboard: <kbd>→</kbd>/<kbd>Space</kbd> step · <kbd>←</kbd> back · <kbd>R</kbd> reset</div>
+  </div>
+
+  <p style="margin-top:18px;font-size:14px;color:var(--muted)">Try a different array &amp; target:</p>
+  <div class="presets" id="presets"></div>
+
+  <!-- ============ 3. DECISION LOGIC ============ -->
+  <h2><span class="num">3</span>The four-way decision, unpacked</h2>
+  <p>Two questions nested: <em>which half is sorted?</em> then <em>is the target in that sorted half's range?</em> That gives four leaves:</p>
+  <div class="cases">
+    <div class="case lcase">
+      <h4>Left half sorted — <span class="mono">nums[mid] ≥ nums[l]</span></h4>
+      <p><b style="color:var(--blue)">Target in [nums[l], nums[mid]):</b> search <span class="mono">left</span> → <span class="mono">h = mid-1</span>.</p>
+      <p><b style="color:var(--purple)">Otherwise:</b> target is in the unsorted right side → search <span class="mono">right</span> → <span class="mono">l = mid+1</span>.</p>
+    </div>
+    <div class="case rcase">
+      <h4>Right half sorted — <span class="mono">nums[mid] &lt; nums[l]</span></h4>
+      <p><b style="color:var(--purple)">Target in (nums[mid], nums[h]]:</b> search <span class="mono">right</span> → <span class="mono">l = mid+1</span>.</p>
+      <p><b style="color:var(--blue)">Otherwise:</b> target is in the unsorted left side → search <span class="mono">left</span> → <span class="mono">h = mid-1</span>.</p>
+    </div>
+  </div>
+  <div class="why">
+    <b>Why <span class="mono">nums[mid] &gt;= nums[l]</span> (with the <span class="mono">=</span>)?</b> When the window shrinks to one element, <span class="mono">mid == l</span>, so <span class="mono">nums[mid] == nums[l]</span>. The <span class="mono">&gt;=</span> correctly treats that single-element window as a "sorted left half" instead of falling into the right-half branch and mis-reading the bounds. (With all-unique elements this is the only time they're equal.)
+  </div>
+
+  <!-- ============ 4. THE CODE ============ -->
+  <h2><span class="num">4</span>The code — yours, annotated</h2>
+<pre><code><span class="kw">def</span> <span class="fn">search</span>(nums, target):
+    l, h = <span class="kw">0</span>, len(nums) - <span class="kw">1</span>
+    <span class="kw">while</span> l &lt;= h:                       <span class="cmt"># &lt;= : a 1-cell window can still be the target</span>
+        mid = (l + h) // <span class="kw">2</span>
+        <span class="kw">if</span> nums[mid] == target:
+            <span class="kw">return</span> mid                   <span class="cmt"># direct hit</span>
+        <span class="kw">if</span> nums[mid] &gt;= nums[l]:           <span class="cmt"># LEFT half is sorted</span>
+            <span class="kw">if</span> target &gt; nums[mid] <span class="kw">or</span> target &lt; nums[l]:
+                l = mid + <span class="kw">1</span>            <span class="cmt"># target not in sorted left → go right</span>
+            <span class="kw">else</span>:
+                h = mid - <span class="kw">1</span>            <span class="cmt"># target is in sorted left → go left</span>
+        <span class="kw">else</span>:                            <span class="cmt"># RIGHT half is sorted</span>
+            <span class="kw">if</span> target &lt; nums[mid] <span class="kw">or</span> target &gt; nums[h]:
+                h = mid - <span class="kw">1</span>            <span class="cmt"># target not in sorted right → go left</span>
+            <span class="kw">else</span>:
+                l = mid + <span class="kw">1</span>            <span class="cmt"># target is in sorted right → go right</span>
+    <span class="kw">return</span> -<span class="kw">1</span>                          <span class="cmt"># window emptied → not present</span></code></pre>
+  <div class="why">
+    <b>Why <span class="mono">l &lt;= h</span> here, but <span class="mono">l &lt; r</span> in Find-Min?</b> Find-Min shrinks a window to a single guaranteed survivor — the answer is always there, so it stops at width 1. Search might find <em>nothing</em>: the target may be absent. So it must keep checking until the window is genuinely empty (<span class="mono">l &gt; h</span>), and only then return <span class="mono">-1</span>. Different goal → different boundary.
+  </div>
+
+  <!-- ============ 5. SELF-QUIZ ============ -->
+  <h2><span class="num">5</span>Check yourself — recall before you reveal</h2>
+  <p style="font-size:14px;color:var(--muted)">Answer in your head (or on paper) first. No scores here — just reveal and compare.</p>
+
+  <div class="q">
+    <div class="prompt">Q1. For <span class="mono">[4,5,6,7,0,1,2]</span>, target <span class="mono">0</span>: at the first step, which half is sorted, and which way do you go?</div>
+    <button class="reveal-btn" onclick="toggle('s1')">Reveal</button>
+    <div class="solution" id="s1">
+      <span class="mono">l=0, h=6, mid=3 → nums[3]=7</span>. Is <span class="mono">nums[mid]=7 ≥ nums[l]=4?</span> <b>Yes</b> → left half <span class="mono">[4,5,6,7]</span> is sorted. Is target <span class="mono">0</span> in <span class="mono">[4,7]</span>? <b>No</b> (0 &lt; 4) → go <span class="mono">right</span>, <span class="mono">l = 4</span>. The whole sorted left half is eliminated in one step.
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="prompt">Q2. Why can't you just compare <span class="mono">target</span> directly to <span class="mono">nums[mid]</span> like in a normal binary search?</div>
+    <button class="reveal-btn" onclick="toggle('s2')">Reveal</button>
+    <div class="solution" id="s2">
+      Because the array isn't globally sorted — there's a cliff somewhere. <span class="mono">target &gt; nums[mid]</span> doesn't reliably mean "go right," since the larger values might be wrapped around to the left of mid. So you first isolate the <b>sorted half</b> (the side without the cliff), where comparisons are trustworthy, and reason about the range there.
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="prompt">Q3. For <span class="mono">[3,4,5,6,1,2]</span>, target <span class="mono">9</span> (absent): what does the function return, and roughly how does the window die?</div>
+    <button class="reveal-btn" onclick="toggle('s3')">Reveal</button>
+    <div class="solution" id="s3">
+      Returns <span class="mono">-1</span>. Each step still eliminates a proven half, but no cell ever equals 9, so the window keeps shrinking until <span class="mono">l &gt; h</span> (empty). The <span class="mono">while l &lt;= h</span> guard then fails and it returns <span class="mono">-1</span>. Absence is detected by the window emptying, not by any special case.
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="prompt">Q4. What's the role of the <span class="mono">=</span> in <span class="mono">nums[mid] &gt;= nums[l]</span>?</div>
+    <button class="reveal-btn" onclick="toggle('s4')">Reveal</button>
+    <div class="solution" id="s4">
+      It handles the moment the window is a single element (<span class="mono">l == h == mid</span>), where <span class="mono">nums[mid] == nums[l]</span>. The <span class="mono">=</span> sends that case into the "left half sorted" branch, where the bounds check <span class="mono">nums[l]..nums[mid]</span> is just the one element — correct. Drop the <span class="mono">=</span> and that single-cell case falls into the right-half branch with a malformed range.
+    </div>
+  </div>
+
+  <!-- ============ KEY TAKEAWAYS ============ -->
+  <div class="keytake">
+    <h3>What you just watched</h3>
+    <ul>
+      <li>A rotated array always has <b>at least one fully-sorted half</b> at any midpoint — the cliff sits in the other half.</li>
+      <li>Find the sorted half (<span class="mono">nums[mid] &gt;= nums[l]</span> → left sorted, else right sorted), then ask if the target's <b>value fits inside that half's range</b>.</li>
+      <li>Fits → search that half; doesn't fit → search the other half. Either way one half is eliminated for a proven reason.</li>
+      <li><span class="mono">while l &lt;= h</span> (not <span class="mono">&lt;</span>) — the target can be absent, so search until the window is empty, then return <span class="mono">-1</span>.</li>
+      <li>O(log n) time, O(1) space. Sibling of <a href="find-min-rotated-sorted-array.html">Find Minimum</a> — same rotated-array trick, different question.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+// ============ DATA: presets (array + target) ============
+const PRESETS = [
+  {nums:[3,4,5,6,1,2],   target:1, tag:"Example 1 · found @4"},
+  {nums:[4,5,6,7,0,1,2], target:0, tag:"classic · found @4"},
+  {nums:[4,5,6,7,0,1,2], target:3, tag:"absent · returns -1"},
+  {nums:[5,1,3],         target:5, tag:"target at left edge"},
+  {nums:[1],             target:1, tag:"single · found @0"},
+];
+
+// ============ build steps by SIMULATING the exact algorithm ============
+// Each iteration emits: a 'probe' frame (mid shown, equality checked),
+// then either 'found', or a 'compare' frame (sorted half identified) +
+// a 'left'/'right' resolution frame after l/h move. Faithful by construction.
+function buildSteps(nums, target){
+  const steps=[];
+  let l=0, h=nums.length-1;
+  steps.push({l, h, mid:null, decision:'init', cand:h-l+1});
+  while(l <= h){
+    const mid = (l + h) >> 1;
+    if(nums[mid] === target){
+      steps.push({l, h, mid, decision:'found', cand:h-l+1});
+      return steps;
+    }
+    const leftSorted = nums[mid] >= nums[l];
+    // does target fall in the sorted half's range?
+    let goRight;
+    if(leftSorted){
+      const inLeft = !(target > nums[mid] || target < nums[l]);
+      goRight = !inLeft;
+    } else {
+      const inRight = !(target < nums[mid] || target > nums[h]);
+      goRight = inRight;
+    }
+    steps.push({l, h, mid, decision:'compare', leftSorted, goRight, cand:h-l+1});
+    let ruledFrom, ruledTo;
+    if(goRight){ ruledFrom = l; ruledTo = mid; l = mid + 1; }
+    else       { ruledFrom = mid; ruledTo = h; h = mid - 1; }
+    steps.push({l, h, mid, decision: goRight ? 'right' : 'left', leftSorted, ruledFrom, ruledTo, cand: Math.max(0, h-l+1)});
+  }
+  steps.push({l, h, mid:null, decision:'notfound', cand:0});
+  return steps;
+}
+
+// ============ state ============
+let curIdx = 0;
+let nums = PRESETS[0].nums;
+let target = PRESETS[0].target;
+let steps = buildSteps(nums, target);
+let step = 0;
+let MAXSTEP = steps.length - 1;
+
+// ============ rendering ============
+function setStage(badge, text, cls){
+  const b = document.getElementById('stageBadge');
+  b.textContent = badge;
+  b.className = 'stage-badge' + (cls ? ' ' + cls : '');
+  document.getElementById('stageText').innerHTML = text;
+}
+
+function render(){
+  const st = steps[step];
+  document.getElementById('stepcount').textContent = `Step ${step} / ${MAXSTEP}`;
+  document.getElementById('targetVal').textContent = target;
+  document.getElementById('backBtn').disabled = step === 0;
+  const sb = document.getElementById('stepBtn');
+  sb.disabled = step >= MAXSTEP;
+  sb.textContent = step >= MAXSTEP ? 'Done ✓' : 'Step ▶';
+
+  const found = st.decision === 'found';
+  const notfound = st.decision === 'notfound';
+  const ended = found || notfound;
+
+  // which indices are the sorted half this step? (only meaningful on compare/resolution frames)
+  const showSorted = (st.decision === 'compare' || st.decision === 'left' || st.decision === 'right') && st.mid !== null;
+  const sortedFrom = showSorted ? (st.leftSorted ? st.l : st.mid) : -1;
+  const sortedTo   = showSorted ? (st.leftSorted ? st.mid : st.h) : -1;
+  const inSorted = i => showSorted && i >= sortedFrom && i <= sortedTo;
+  const justRuled = i => st.ruledFrom !== undefined && i >= st.ruledFrom && i <= st.ruledTo;
+
+  // ---- linear cells ----
+  const cells = nums.map((v, i) => {
+    const inWin = !ended && i >= st.l && i <= st.h;
+    let cls = (i >= st.l && i <= st.h) ? 'win' : 'dim';
+    if(found && i === st.mid){ cls = 'answer'; }
+    else if(justRuled(i)){ cls = 'ruled'; }
+    else {
+      if(inSorted(i)) cls += ' sorted';
+      if(!ended){
+        if(i === st.l) cls += ' atL';
+        if(i === st.h) cls += ' atR';
+        if(st.mid !== null && i === st.mid) cls += ' atM';
+      }
+    }
+    // pointer labels
+    let ptr = '';
+    if(found && i === st.mid){
+      ptr = '<span class="ptr m">found</span>';
+    } else if(!ended){
+      const labels = [];
+      if(i === st.l) labels.push('<span class="ptr l">l</span>');
+      if(st.mid !== null && i === st.mid) labels.push('<span class="ptr m">mid</span>');
+      if(i === st.h) labels.push('<span class="ptr r">h</span>');
+      ptr = labels.join('');
+    }
+    const tag = justRuled(i) ? '<span class="ruledtag">✗ ruled out</span>' : '<span class="ruledtag">&nbsp;</span>';
+    return `<div class="cellbox">
+        <div class="cell ${cls}">${v}</div>
+        <div class="idx">${i}</div>
+        <div style="display:flex;gap:4px">${ptr || '&nbsp;'}</div>
+        ${tag}
+      </div>`;
+  }).join('');
+  document.getElementById('arr').innerHTML = cells;
+
+  // ---- circular dial ----
+  drawDial(st, found, notfound, sortedFrom, sortedTo, showSorted);
+
+  // ---- candidate counter ----
+  const cc = document.getElementById('candcount');
+  if(found){
+    cc.innerHTML = `<span class="lead">target found at index</span> <b>${st.mid}</b> <span class="lead">— done.</span>`;
+  } else if(notfound){
+    cc.innerHTML = `<span class="lead">window is empty (l &gt; h) — target isn't here →</span> <b>-1</b>`;
+  } else {
+    cc.innerHTML = `<span class="lead">cells still in play:</span> <b>${st.cand}</b> <span class="lead">(window [${st.l}, ${st.h}])</span>`;
+  }
+
+  // ---- narration ----
+  if(st.decision === 'init'){
+    setStage('START', `Window is the whole array: <b>l=${st.l}</b>, <b>h=${st.h}</b>. Searching for <b>${target}</b> until the window empties.`, 'live');
+  } else if(st.decision === 'compare'){
+    const mv = nums[st.mid];
+    const half = st.leftSorted ? `<span style="color:var(--blue);font-weight:700">left half [${st.l}..${st.mid}] is sorted</span>` : `<span style="color:var(--purple);font-weight:700">right half [${st.mid}..${st.h}] is sorted</span>`;
+    const range = st.leftSorted ? `nums[l]=${nums[st.l]}..nums[mid]=${mv}` : `nums[mid]=${mv}..nums[h]=${nums[st.h]}`;
+    const verdict = st.goRight
+      ? `Target ${target} is <span class="r">NOT</span> in that sorted range (${range}) → it must be in the other half → go <span class="mono">right</span>.`
+      : `Target ${target} <span class="g">fits</span> the sorted range (${range}) → go toward it.`;
+    // when leftSorted & goRight -> right; leftSorted & !goRight -> left; rightSorted & goRight->right; etc.
+    setStage('CHECK', `mid=${st.mid}, nums[mid]=${mv} ≠ ${target}. ${half}. ${verdict}`, 'live');
+  } else if(st.decision === 'right'){
+    setStage('GO RIGHT', `Eliminated the <span class="r">left part [${st.ruledFrom}..${st.ruledTo}]</span> for a proven reason. Window is now <b>l=${st.l}</b>, <b>h=${st.h}</b>.`, 'go-right');
+  } else if(st.decision === 'left'){
+    setStage('GO LEFT', `Eliminated the <span class="r">right part [${st.ruledFrom}..${st.ruledTo}]</span> for a proven reason. Window is now <b>l=${st.l}</b>, <b>h=${st.h}</b>.`, 'go-left');
+  } else if(found){
+    setStage('FOUND', `<span class="mono">nums[${st.mid}] == ${target}</span> → return index <b>${st.mid}</b>.`, 'found');
+  } else if(notfound){
+    setStage('NOT FOUND', `<span class="mono">l &gt; h</span> — the window is empty and ${target} was never matched → return <b>-1</b>.`, 'notfound');
+  }
+}
+
+// ---- circular dial ----
+function drawDial(st, found, notfound, sortedFrom, sortedTo, showSorted){
+  const svg = document.getElementById('dial');
+  const cx=100, cy=100, R=72, n=nums.length;
+  const pos = i => {
+    const a = -Math.PI/2 + (2*Math.PI*i)/n;
+    return { x: cx + R*Math.cos(a), y: cy + R*Math.sin(a), a };
+  };
+  let out = '';
+  // sorted-half arc (blue) from sortedFrom..sortedTo
+  if(showSorted && n > 1 && sortedTo > sortedFrom){
+    const aA = pos(sortedFrom).a, aB = pos(sortedTo).a;
+    const x1 = cx + R*Math.cos(aA), y1 = cy + R*Math.sin(aA);
+    const x2 = cx + R*Math.cos(aB), y2 = cy + R*Math.sin(aB);
+    const span = sortedTo - sortedFrom;
+    const large = span > n/2 ? 1 : 0;
+    out += `<path d="M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${R} ${R} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)}" fill="none" stroke="var(--blue)" stroke-width="4" opacity="0.55"/>`;
+  }
+  for(let i=0;i<n;i++){
+    const p = pos(i);
+    let fill='var(--surface2)', stroke='var(--border)', tcol='var(--muted)', rad=13;
+    const inWin = !found && !notfound && i >= st.l && i <= st.h;
+    if(!(i >= st.l && i <= st.h)){ tcol='#475569'; }
+    if(found && i === st.mid){ fill='var(--green)'; stroke='var(--green)'; tcol='#0b1120'; rad=16; }
+    else {
+      if(showSorted && i >= sortedFrom && i <= sortedTo){ fill='rgba(96,165,250,.18)'; stroke='var(--blue)'; }
+      if(st.mid !== null && i === st.mid && !found){ fill='rgba(251,191,36,.22)'; stroke='var(--yellow)'; tcol='var(--yellow)'; }
+      if(inWin && i === st.l){ stroke = (tcol==='var(--yellow)')?stroke:'var(--blue)'; }
+      if(inWin && i === st.h){ stroke = (tcol==='var(--yellow)')?stroke:'var(--purple)'; }
+    }
+    out += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${rad}" fill="${fill}" stroke="${stroke}" stroke-width="2"/>`;
+    out += `<text x="${p.x.toFixed(1)}" y="${(p.y+4).toFixed(1)}" fill="${tcol}" font-size="12" font-weight="700" font-family="SF Mono,Menlo,monospace" text-anchor="middle">${nums[i]}</text>`;
+  }
+  svg.innerHTML = out;
+}
+
+// ============ controls ============
+function next(){ if(step < MAXSTEP){ step++; render(); } }
+function prev(){ if(step > 0){ step--; render(); } }
+function resetSteps(){ step = 0; render(); }
+
+function loadPreset(i){
+  curIdx = i;
+  nums = PRESETS[i].nums;
+  target = PRESETS[i].target;
+  steps = buildSteps(nums, target);
+  MAXSTEP = steps.length - 1;
+  step = 0;
+  document.querySelectorAll('.preset').forEach((el,idx)=>el.classList.toggle('sel', idx===i));
+  render();
+}
+
+document.getElementById('presets').innerHTML = PRESETS.map((p,i)=>
+  `<button class="preset ${i===0?'sel':''}" onclick="loadPreset(${i})">[${p.nums.join(',')}] · t=${p.target}<span class="tag">${p.tag}</span></button>`
+).join('');
+
+function toggle(id){ document.getElementById(id).classList.toggle('show'); }
+
+document.addEventListener('keydown', e=>{
+  if(e.key === 'ArrowRight' || e.key === ' '){ e.preventDefault(); next(); }
+  else if(e.key === 'ArrowLeft'){ e.preventDefault(); prev(); }
+  else if(e.key === 'r' || e.key === 'R'){ resetSteps(); }
+});
+
+render();
+</script>
+
+</body>
+</html>

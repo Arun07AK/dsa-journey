@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>The Method — how DSA is actually learned</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Hanken+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Paper / Editorial — warm letterpress */
+  --bg:#EFE9DC; --bg2:#E7DFCF; --recess:#E3DAC8;
+  --surface:#F8F4EB; --surface-edge:rgba(33,29,23,0.07);
+  --ink:#211D17; --soft:#7C7363; --faint:#A89E8A;
+  --line:rgba(33,29,23,0.12); --hair:rgba(33,29,23,0.07);
+  --accent:#C1452B; --on-accent:#FBF7EE;
+  --dsa:#B85436; --good:#5C7E3F;
+  --card-shadow:0 1px 0 rgba(255,255,255,0.6), 0 18px 40px -22px rgba(40,30,15,0.45);
+  --display:'Instrument Serif',Georgia,serif;
+  --ui:'Hanken Grotesk',system-ui,-apple-system,sans-serif;
+  --mono:'Space Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg);
+  background-image:radial-gradient(120% 80% at 50% -10%, #F3EEE2 0%, #E9E1D1 55%, #E3DAC8 100%);
+  color:var(--ink); font-family:var(--ui);
+  -webkit-font-smoothing:antialiased; line-height:1.55;
+}
+body::before{
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.04; mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:160px 160px;
+}
+.wrap{max-width:540px; margin:0 auto; padding:48px 22px 60px; min-height:100%; position:relative; z-index:1;
+  padding-top:max(48px,env(safe-area-inset-top)); padding-bottom:max(60px,env(safe-area-inset-bottom))}
+.view{display:none; animation:adView .42s cubic-bezier(.2,.7,.2,1) both}
+.view.on{display:block}
+@keyframes adView{from{transform:translateY(9px);opacity:.4}to{transform:none;opacity:1}}
+@keyframes adFlip{from{transform:translateY(12px) scale(.97);opacity:0}to{transform:none;opacity:1}}
+.reveal-anim{animation:adFlip .5s cubic-bezier(.2,.7,.2,1) both}
+@media (prefers-reduced-motion:reduce){.view,.reveal-anim{animation:none!important}}
+
+/* ---------- type helpers ---------- */
+.mono-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint)}
+.serif{font-family:var(--display);font-weight:400;letter-spacing:-0.005em;color:var(--ink)}
+
+/* ---------- top bar ---------- */
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.brand{font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink);display:flex;align-items:baseline}
+.brand .dot{color:var(--accent);padding:0 1px}
+.nav{display:flex;gap:7px}
+.pill{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft);
+  border:1px solid var(--line);border-radius:999px;padding:8px 14px;cursor:pointer;background:transparent;
+  display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:all .18s}
+.pill:hover{border-color:rgba(33,29,23,0.32);color:var(--ink)}
+.pill.active{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+/* ---------- hero ---------- */
+.hero{margin:34px 0 8px}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
+.hero h1{font-family:var(--display);font-weight:400;font-size:42px;line-height:1.04;letter-spacing:-0.01em;color:var(--ink);text-wrap:balance}
+.hero h1 em{font-style:italic;color:var(--accent)}
+.hero .lede{font-size:16px;color:var(--soft);margin-top:18px;line-height:1.6;max-width:46ch}
+
+/* ---------- the big claim banner ---------- */
+.banner{background:var(--ink);color:var(--bg);border-radius:18px;padding:24px 22px;margin:28px 0 8px;box-shadow:var(--card-shadow)}
+.banner .bk{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:rgba(239,233,220,.5);margin-bottom:12px}
+.banner .claim{font-family:var(--display);font-size:27px;line-height:1.12;letter-spacing:-0.005em}
+.banner .claim em{font-style:italic;color:#E8A87C}
+.banner .sub{font-size:13.5px;color:rgba(239,233,220,.72);margin-top:14px;line-height:1.55}
+
+/* ---------- section cards ---------- */
+.sec-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);margin:36px 0 16px}
+.fcard{background:var(--surface);border:1px solid var(--surface-edge);border-radius:18px;padding:22px 21px 20px;box-shadow:var(--card-shadow);margin-bottom:16px;position:relative;overflow:hidden}
+.fcard .num{position:absolute;top:14px;right:18px;font-family:var(--display);font-size:46px;line-height:1;color:rgba(33,29,23,0.07)}
+.fcard .ftag{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dsa);margin-bottom:11px}
+.fcard h3{font-family:var(--display);font-weight:400;font-size:25px;line-height:1.1;letter-spacing:-0.005em;color:var(--ink);margin-bottom:14px;text-wrap:balance;padding-right:40px}
+.fcard p{font-size:15px;color:var(--ink);line-height:1.62;margin-bottom:12px}
+.fcard p:last-of-type{margin-bottom:0}
+.fcard .soft{color:var(--soft)}
+.fcard strong{font-weight:700}
+.fcard .analogy{background:var(--recess);border-radius:12px;padding:14px 15px;margin:14px 0;font-size:14px;color:var(--ink);line-height:1.55}
+.fcard .analogy .al{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);display:block;margin-bottom:7px}
+.fcard .sowhat{display:flex;gap:10px;align-items:baseline;margin-top:16px;padding-top:15px;border-top:1px solid var(--line)}
+.fcard .sowhat .sw{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);white-space:nowrap;padding-top:2px}
+.fcard .sowhat .swt{font-size:14.5px;color:var(--ink);font-weight:500;line-height:1.5}
+.fcard .src{font-family:var(--mono);font-size:10.5px;letter-spacing:.02em;color:var(--faint);margin-top:13px;line-height:1.5}
+
+/* visual mini-diagrams */
+.vis{margin:16px 0;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--bg)}
+.vis svg{display:block;width:100%;height:auto}
+
+/* counter-signal card */
+.counter{background:var(--recess);border:1px solid var(--line);border-radius:16px;padding:20px 20px;margin:20px 0 6px}
+.counter .ct{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);margin-bottom:11px}
+.counter h3{font-family:var(--display);font-size:21px;color:var(--ink);margin-bottom:12px;line-height:1.12}
+.counter p{font-size:14.5px;color:var(--ink);line-height:1.6}
+
+/* ---------- LOOP view ---------- */
+.loop-step{background:var(--surface);border:1px solid var(--surface-edge);border-radius:18px;padding:22px 21px;box-shadow:var(--card-shadow);margin-bottom:16px}
+.loop-step.locked{opacity:.5;filter:saturate(.5)}
+.loop-step .stepnum{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);display:flex;align-items:center;gap:9px;margin-bottom:13px}
+.loop-step .stepnum .dot{width:7px;height:7px;border-radius:999px;background:var(--faint)}
+.loop-step.active .stepnum .dot{background:var(--accent)}
+.loop-step.done .stepnum .dot{background:var(--good)}
+.loop-step h3{font-family:var(--display);font-weight:400;font-size:24px;line-height:1.1;color:var(--ink);margin-bottom:12px}
+.loop-step p{font-size:14.5px;color:var(--soft);line-height:1.58;margin-bottom:14px}
+.loop-step p.ink{color:var(--ink)}
+label.fld{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:14px 0 7px}
+input.in,textarea.in,select.in{width:100%;font-family:var(--ui);font-size:15px;color:var(--ink);background:var(--bg);
+  border:1px solid var(--line);border-radius:11px;padding:12px 13px;outline:none;transition:border-color .15s;line-height:1.5}
+textarea.in{resize:vertical;min-height:62px}
+input.in:focus,textarea.in:focus,select.in:focus{border-color:rgba(33,29,23,0.34)}
+.radio-row{display:flex;gap:9px;margin-top:7px}
+.radio-row button{flex:1;font-family:var(--ui);font-weight:600;font-size:14px;border:1px solid var(--line);border-radius:11px;
+  padding:11px;background:transparent;color:var(--soft);cursor:pointer;transition:all .15s}
+.radio-row button.sel{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.guideline{background:var(--recess);border-radius:13px;padding:16px 17px;margin:4px 0 6px}
+.guideline .gl-t{font-family:var(--display);font-size:19px;color:var(--ink);margin-bottom:8px;line-height:1.15}
+.guideline .gl-p{font-size:14px;color:var(--ink);line-height:1.55}
+.guideline .gl-p b{color:var(--accent);font-weight:700}
+.affirm{background:#EDF1E6;border:1px solid rgba(92,126,63,.3);border-radius:13px;padding:15px 16px;margin:6px 0;font-size:14.5px;color:#39491f;line-height:1.55}
+.affirm b{color:var(--good)}
+
+/* buttons */
+.btn{font-family:var(--ui);font-weight:600;font-size:14.5px;letter-spacing:.01em;border-radius:13px;
+  padding:13px 18px;cursor:pointer;transition:all .18s;display:inline-flex;align-items:center;justify-content:center;
+  gap:8px;white-space:nowrap;border:1px solid transparent;-webkit-tap-highlight-color:transparent}
+.btn.full{width:100%}
+.btn.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent);box-shadow:0 10px 22px -12px rgba(193,69,43,.7)}
+.btn.primary:hover{filter:brightness(1.05)}
+.btn.dark{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.dark:hover{filter:brightness(1.15)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{border-color:rgba(33,29,23,0.32)}
+.btn.quiet{background:transparent;color:var(--soft);border:none;padding:11px 4px}
+.btn.quiet:hover{color:var(--ink)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* output box */
+.outbox{background:var(--ink);border-radius:14px;padding:18px 17px;margin-top:8px}
+.outbox pre{font-family:var(--mono);font-size:12px;line-height:1.65;color:#E9E1D1;white-space:pre-wrap;word-break:break-word}
+.spacing-note{font-size:13.5px;color:var(--soft);line-height:1.55;margin-top:18px;padding:15px 16px;border:1px dashed var(--line);border-radius:13px}
+.spacing-note b{color:var(--ink)}
+
+.permabar{position:sticky;bottom:0;margin-top:8px}
+.foot-note{text-align:center;font-size:12.5px;color:var(--faint);margin-top:34px;line-height:1.6}
+.foot-note b{color:var(--soft)}
+.divider{height:1px;background:var(--line);margin:30px 0}
+.toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);
+  font-size:13.5px;font-weight:600;padding:12px 20px;border-radius:999px;opacity:0;transition:all .3s;z-index:50;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div class="brand">THE<span class="dot">·</span>METHOD</div>
+    <div class="nav">
+      <button class="pill active" id="nav-method" onclick="go('method')">The Method</button>
+      <button class="pill" id="nav-loop" onclick="go('loop')">Do It Now</button>
+    </div>
+  </div>
+
+  <!-- ============ VIEW: THE METHOD ============ -->
+  <section class="view on" id="view-method">
+
+    <div class="hero">
+      <div class="kicker">How DSA is actually learned</div>
+      <h1>You're not behind. You've just been using the <em>wrong rule</em>.</h1>
+      <p class="lede">The rule "I have to solve it alone or it doesn't count" feels like integrity. It isn't. It's the single thing making this miserable — and the science says it's also the slowest way to learn. Here's what actually builds skill.</p>
+    </div>
+
+    <div class="banner">
+      <div class="bk">The whole thing in one line</div>
+      <div class="claim">Reading the solution at the cap is <em>the method</em>. It is not cheating. It is how the pattern library gets built.</div>
+      <div class="sub">Everything below is the evidence for that one sentence. Read it once. Then go live it on the next problem.</div>
+    </div>
+
+    <div class="sec-label">— The evidence, in plain words</div>
+
+    <!-- F1: worked-example -->
+    <div class="fcard">
+      <div class="num">01</div>
+      <div class="ftag">The core permission</div>
+      <h3>For someone at your level, reading the worked solution teaches more per hour than grinding.</h3>
+      <p>When you flail at a problem above your level, your brain spends all its working memory <em>searching</em> — "what do I even try?" — and almost none of it actually <strong>learning the pattern</strong>. Studying a worked solution skips the wasteful search and puts the whole pattern in front of you to absorb.</p>
+      <div class="analogy"><span class="al">Real world</span>You don't learn to cook by being locked in a kitchen with raw ingredients and no recipe for an hour. You read the recipe, cook it, and <em>then</em> you start improvising. Nobody calls reading the recipe cheating.</div>
+      <div class="vis">
+        <svg viewBox="0 0 520 130" xmlns="http://www.w3.org/2000/svg" font-family="'Space Mono',monospace">
+          <rect width="520" height="130" fill="#EFE9DC"/>
+          <text x="20" y="28" font-size="11" letter-spacing="1.5" fill="#A89E8A">WHERE YOUR BRAIN'S ENERGY GOES</text>
+          <!-- grind bar -->
+          <text x="20" y="58" font-size="12" fill="#211D17">Grind alone</text>
+          <rect x="120" y="48" width="280" height="14" rx="3" fill="#C1452B" opacity="0.85"/>
+          <rect x="400" y="48" width="60" height="14" rx="3" fill="#5C7E3F"/>
+          <text x="120" y="80" font-size="9.5" fill="#7C7363">searching for what to try</text>
+          <text x="405" y="80" font-size="9.5" fill="#5C7E3F">learn</text>
+          <!-- read bar -->
+          <text x="20" y="106" font-size="12" fill="#211D17">Read + redo</text>
+          <rect x="120" y="96" width="70" height="14" rx="3" fill="#C1452B" opacity="0.85"/>
+          <rect x="190" y="96" width="270" height="14" rx="3" fill="#5C7E3F"/>
+          <text x="270" y="124" font-size="9.5" fill="#5C7E3F" text-anchor="middle">building the pattern</text>
+        </svg>
+      </div>
+      <div class="sowhat"><span class="sw">So what</span><span class="swt">At your level the editorial is the higher-yield move, not the lazy one. The grind is what's actually inefficient.</span></div>
+      <div class="src">Sweller 1988 (schemas, not raw ability, separate experts from beginners) · the worked-example effect, Sweller &amp; Cooper 1985</div>
+    </div>
+
+    <!-- F2: testing effect -->
+    <div class="fcard">
+      <div class="num">02</div>
+      <div class="ftag">Why your attempt isn't wasted</div>
+      <h3>Trying first, then looking, beats never trying — even when your try fails.</h3>
+      <p>Here's the part the guilt gets backwards: the 20 minutes you spent stuck are <strong>not lost</strong> when you look. A failed attempt primes your brain so the solution lands deeper than if you'd read it cold. The look doesn't cancel your effort — <strong>it completes the rep.</strong></p>
+      <p class="soft">So the move is never "struggle OR look." It's "struggle, <em>then</em> look." Both. Always.</p>
+      <div class="sowhat"><span class="sw">So what</span><span class="swt">Stop grading yourself on whether you looked. A try-then-look is a complete, correct rep. That's the unit.</span></div>
+      <div class="src">Roediger &amp; Karpicke 2006 (the testing effect) · Kornell, Hays &amp; Bjork 2009 (even unsuccessful retrieval boosts later learning)</div>
+    </div>
+
+    <!-- F3: chunking / experts -->
+    <div class="fcard">
+      <div class="num">03</div>
+      <div class="ftag">What experts actually have</div>
+      <h3>Experts don't out-think you move by move. They <em>recognize</em> patterns they've already seen.</h3>
+      <p>A chess master doesn't calculate harder than a beginner — they've stored <strong>tens of thousands of patterns</strong> and just <em>see</em> the right move. Same for DSA. The person who "solves it instantly" isn't smarter. They've met that pattern 40 times before.</p>
+      <div class="analogy"><span class="al">Real world</span>You can read this sentence instantly — not because you're a genius, but because you've seen these words thousands of times. To a 5-year-old it's a brutal puzzle. DSA problems become "obvious" the exact same way: exposure, not IQ.</div>
+      <div class="sowhat"><span class="sw">So what</span><span class="swt">"Looking it up" isn't cheating — it's literally how you stock the library of patterns that makes you fast later. The library <em>is</em> the skill.</span></div>
+      <div class="src">Chase &amp; Simon 1973 (chess chunking) · Chi, Feltovich &amp; Glaser 1981 (how novices vs experts see physics problems)</div>
+    </div>
+
+    <!-- F4: struggle line -->
+    <div class="fcard">
+      <div class="num">04</div>
+      <div class="ftag">When to push, when to look</div>
+      <h3>Struggle only helps when you have a foothold. Above your level, it just hurts.</h3>
+      <p>The research draws a sharp line. If you have <strong>some idea</strong> — a direction, a half-plan — pushing a bit more is genuinely good for you. But if you're staring with <strong>no idea where to even start</strong>, that's not noble struggle. It's the kind that drains you and teaches nothing.</p>
+      <p class="ink"><strong>So the cap isn't a clock you failed. It's a question:</strong> "Am I plausibly close, or is this just above me right now?" No foothold after a while → that's the signal to read <em>now</em>, not at minute 59.</p>
+      <div class="vis">
+        <svg viewBox="0 0 520 120" xmlns="http://www.w3.org/2000/svg" font-family="'Space Mono',monospace">
+          <rect width="520" height="120" fill="#EFE9DC"/>
+          <text x="20" y="26" font-size="11" letter-spacing="1.5" fill="#A89E8A">THE FORK</text>
+          <line x1="60" y1="60" x2="180" y2="60" stroke="#7C7363" stroke-width="2"/>
+          <circle cx="60" cy="60" r="5" fill="#211D17"/>
+          <text x="50" y="84" font-size="10" fill="#211D17">you're stuck</text>
+          <!-- branch up: foothold -->
+          <line x1="180" y1="60" x2="320" y2="32" stroke="#5C7E3F" stroke-width="2"/>
+          <text x="328" y="30" font-size="10.5" fill="#5C7E3F">have a direction?</text>
+          <text x="328" y="46" font-size="10.5" fill="#5C7E3F">→ push a little more</text>
+          <!-- branch down: no foothold -->
+          <line x1="180" y1="60" x2="320" y2="92" stroke="#C1452B" stroke-width="2"/>
+          <text x="328" y="90" font-size="10.5" fill="#C1452B">no idea at all?</text>
+          <text x="328" y="106" font-size="10.5" fill="#C1452B">→ read now. that's the method.</text>
+        </svg>
+      </div>
+      <div class="sowhat"><span class="sw">So what</span><span class="swt">Your old 60-minute rule forced "no-foothold" struggle — the exact kind that demoralizes. ~30 min is plenty to find out which branch you're on.</span></div>
+      <div class="src">Kapur 2008 (productive failure) · Bjork &amp; Bjork (desirable vs <em>un</em>desirable difficulty) · Sweller (overload of working memory)</div>
+    </div>
+
+    <!-- F5: recode from blank / fluency illusion -->
+    <div class="fcard">
+      <div class="num">05</div>
+      <div class="ftag">The one step you can't skip</div>
+      <h3>"I understood it" is a trap. "I rebuilt it from blank" is the truth.</h3>
+      <p>Right after reading a clean solution, your brain says <em>"yeah, I get it."</em> That feeling is a <strong>known illusion</strong> — fluency feels like learning but isn't. The only honest test is closing the editorial and re-coding it from an empty file. If you can, it's yours. If you can't, you just learned exactly what to look at again.</p>
+      <div class="analogy"><span class="al">Real world</span>Watching someone parallel-park looks easy and makes you feel like you could do it. Then you sit in the driver's seat. The car is the blank file.</div>
+      <div class="sowhat"><span class="sw">So what</span><span class="swt">This is why "Do It Now" makes recode-from-blank a required step. It's the move that turns <em>"I read it"</em> into <em>"I learned it."</em></span></div>
+      <div class="src">Bjork &amp; Bjork (the fluency illusion) · Roediger &amp; Karpicke 2006 (re-reading feels better, fails on the real test)</div>
+    </div>
+
+    <!-- F6: spacing + interleaving -->
+    <div class="fcard">
+      <div class="num">06</div>
+      <div class="ftag">How to make it stick</div>
+      <h3>Space them out, and mix the patterns.</h3>
+      <p><strong>Spacing:</strong> re-attempt a problem a few days later, not the same day. The little forgetting in between is what burns it in for good.</p>
+      <p><strong>Interleaving:</strong> don't grind ten sliding-window problems in a row. Mixing patterns feels harder and messier — and that's exactly why it works. It trains the real interview skill: <em>recognizing which pattern a cold problem even is.</em></p>
+      <div class="sowhat"><span class="sw">So what</span><span class="swt">Blocked, same-day grinding feels productive but transfers worst. A little mess and a few days' gap is the durable way.</span></div>
+      <div class="src">Cepeda et al. 2006 (spacing meta-analysis) · Rohrer &amp; Taylor 2007, Rohrer 2012 (interleaving beats blocking on later tests)</div>
+    </div>
+
+    <!-- F7: the rule, dissolved -->
+    <div class="fcard">
+      <div class="num">07</div>
+      <div class="ftag">The rule that was hurting you</div>
+      <h3>"It only counts if I solved it alone" was never a study method.</h3>
+      <p>A rule you feel <strong>guilty</strong> for breaking, that gives <strong>relief</strong> when you obey it, and that makes you suffer to prove something — that's not how learning works. Good method has none of that charge. It just asks: <em>did the pattern go into the library?</em></p>
+      <p class="ink">So we're not asking you to fight the rule with willpower. We're <strong>deleting the rule.</strong> Looking is the intended step now. There's nothing left to break, so there's nothing to feel bad about.</p>
+      <div class="sowhat"><span class="sw">So what</span><span class="swt">This is just good practice for <em>anyone</em> learning anything. Reading the answer to build the skill is the normal, smart thing to do.</span></div>
+      <div class="src">This is the design principle the whole "Do It Now" loop is built on.</div>
+    </div>
+
+    <div class="counter">
+      <div class="ct">One honest counter-signal</div>
+      <h3>This isn't "never struggle."</h3>
+      <p>Struggle has real value — when you have a foothold (finding #04). The cap doesn't delete struggle, it <em>protects</em> it from turning into the demoralizing kind. And as you get stronger, the balance naturally shifts: you'll solve more cold, look less. That's not a rule you enforce — it just happens as the library grows. Looking less is a <em>result</em> of getting good, never the thing you force to <em>feel</em> good.</p>
+    </div>
+
+    <div class="divider"></div>
+    <div class="banner" style="margin-top:0">
+      <div class="bk">Your own system already knew this</div>
+      <div class="claim">Calm-you wrote <em>"read, then recode from blank"</em> in your strategy months ago.</div>
+      <div class="sub">You didn't need a new method tonight. You needed permission to trust the one you already built. Now you have the evidence. Go run it.</div>
+    </div>
+
+    <button class="btn dark full" style="margin-top:18px" onclick="go('loop')">Run it on the next problem →</button>
+
+    <div class="foot-note">No streaks here. No score. No "you broke it."<br><b>A look-up is the method. A gap is a normal day.</b></div>
+  </section>
+
+  <!-- ============ VIEW: DO IT NOW (THE LOOP) ============ -->
+  <section class="view" id="view-loop">
+
+    <div class="hero" style="margin-bottom:0">
+      <div class="kicker">One problem · guilt-free</div>
+      <h1>Do It Now.</h1>
+      <p class="lede">Walk one Blind 75 problem through the loop. No timer ticking, no streak, no score. Just the four steps that turn a problem into a stored pattern.</p>
+    </div>
+
+    <!-- STEP 1: setup -->
+    <div class="loop-step active" id="ls1">
+      <div class="stepnum"><span class="dot"></span> Step 1 — what are you on?</div>
+      <h3>The problem &amp; its pattern</h3>
+      <label class="fld">Problem name</label>
+      <input class="in" id="probName" placeholder="e.g. Longest Substring Without Repeating Characters" oninput="saveLoop()">
+      <label class="fld">Difficulty</label>
+      <div class="radio-row" id="diffRow">
+        <button data-d="Easy" onclick="pickDiff(this)">Easy</button>
+        <button data-d="Med" onclick="pickDiff(this)">Med</button>
+        <button data-d="Hard" onclick="pickDiff(this)">Hard</button>
+      </div>
+      <label class="fld">Which pattern is it under? (Blind 75 groups these for you)</label>
+      <select class="in" id="patSel" onchange="saveLoop()">
+        <option value="">— pick the pattern —</option>
+      </select>
+    </div>
+
+    <!-- STEP 2: attempt -->
+    <div class="loop-step" id="ls2">
+      <div class="stepnum"><span class="dot"></span> Step 2 — attempt (no clock)</div>
+      <h3>Give it a real go.</h3>
+      <div class="guideline">
+        <div class="gl-t">~30 min, give or take. No timer here on purpose.</div>
+        <div class="gl-p">Got a <b>foothold</b> — a direction, a half-idea? Keep going a little.<br>No idea where to even start? <b>That's your signal to read now</b> — not in an hour. That's the method, not a fail.</div>
+      </div>
+      <p class="ink">When you've genuinely tried — whether you cracked it or hit the wall — move on. Both outcomes are a complete rep.</p>
+      <button class="btn ghost full" onclick="advance(2)">I've given it a real go →</button>
+    </div>
+
+    <!-- STEP 3: read -->
+    <div class="loop-step" id="ls3">
+      <div class="stepnum"><span class="dot"></span> Step 3 — read the solution</div>
+      <h3>Now go read it. On purpose.</h3>
+      <div class="affirm">✓ <b>This is the correct move</b>, not a defeat. Reading the editorial is how the pattern gets into your library (finding #01 &amp; #03). Read it until you actually understand <em>why</em> it works — not just what it does.</div>
+      <p class="ink">Open the NeetCode solution / editorial. Understand the key idea. Don't just skim the code — get the <em>why</em>.</p>
+      <button class="btn ghost full" onclick="advance(3)">I've read &amp; understood the idea →</button>
+    </div>
+
+    <!-- STEP 4: recode -->
+    <div class="loop-step" id="ls4">
+      <div class="stepnum"><span class="dot"></span> Step 4 — recode from blank <span style="color:var(--accent)">· required</span></div>
+      <h3>Close it. Rebuild from an empty file.</h3>
+      <p class="ink">This is the one step you can't skip (finding #05). "I understood it" is a feeling that lies. Close the solution completely and type it out from scratch. <strong>This</strong> is the rep that makes it yours.</p>
+      <div class="radio-row" id="recodeRow" style="margin-top:4px">
+        <button data-r="clean" onclick="pickRecode(this)">Rebuilt it clean</button>
+        <button data-r="peek" onclick="pickRecode(this)">Got stuck, peeked again</button>
+      </div>
+      <p class="soft" style="margin-top:13px;margin-bottom:0">Either answer is fine. "Peeked again" just means this one needs another pass in a few days — that's data, not failure.</p>
+      <button class="btn ghost full" style="margin-top:16px" onclick="advance(4)">Done — log the pattern →</button>
+    </div>
+
+    <!-- STEP 5: reflect -->
+    <div class="loop-step" id="ls5">
+      <div class="stepnum"><span class="dot"></span> Step 5 — log it in your library</div>
+      <h3>The line that turns solving into recognizing.</h3>
+      <p>These are the exact fields from your <strong>solved.md</strong>. Fill them, copy, paste. The library grows by one.</p>
+      <label class="fld">Pattern — the reusable idea</label>
+      <textarea class="in" id="rPattern" placeholder='e.g. "expand a window, shrink it when a constraint breaks"' oninput="saveLoop();buildOut()"></textarea>
+      <label class="fld">Key insight — the one thing that unlocked it</label>
+      <textarea class="in" id="rInsight" placeholder="the single realization that made it click" oninput="saveLoop();buildOut()"></textarea>
+      <label class="fld">If I saw it cold again — the trigger I'd recognize</label>
+      <textarea class="in" id="rTrigger" placeholder='e.g. "asks for longest/shortest substring with a condition → sliding window"' oninput="saveLoop();buildOut()"></textarea>
+
+      <div class="outbox" id="outboxWrap" style="display:none">
+        <pre id="outPre"></pre>
+      </div>
+      <button class="btn primary full" style="margin-top:14px" onclick="copyEntry()">Copy entry for solved.md</button>
+
+      <div class="spacing-note">
+        <b>Space it.</b> Add a quiet note to re-try this problem in <b>3–4 days</b> (finding #06). Not a schedule, not a streak — just so the pattern burns in. When you come back and it's still there, that's the proof it's yours.
+      </div>
+
+      <button class="btn ghost full" style="margin-top:16px" onclick="resetLoop()">Start a fresh problem</button>
+    </div>
+
+    <div class="foot-note">No streak. No score. No red.<br><b>One problem, into the library. That's the whole win.</b></div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast">Copied — paste it into solved.md</div>
+
+<script>
+const PATTERNS = ["Arrays & Hashing","Two Pointers","Sliding Window","Binary Search","Stack & Queue","Linked List","Trees (BFS/DFS)","Graphs (BFS/DFS)","Backtracking/Recursion","Dynamic Programming","Greedy","Heap / Priority Queue","Intervals","Tries","Monotonic Stack"];
+const LS_KEY = "dsa_method_loop_v1";
+
+// populate pattern select
+const sel = document.getElementById('patSel');
+PATTERNS.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;sel.appendChild(o);});
+
+let state = {prob:"",diff:"",pat:"",recode:"",pattern:"",insight:"",trigger:"",step:1};
+
+function go(v){
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('on'));
+  document.getElementById('view-'+v).classList.add('on');
+  document.getElementById('nav-method').classList.toggle('active', v==='method');
+  document.getElementById('nav-loop').classList.toggle('active', v==='loop');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function pickDiff(btn){
+  document.querySelectorAll('#diffRow button').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel'); state.diff=btn.dataset.d; saveLoop();
+}
+function pickRecode(btn){
+  document.querySelectorAll('#recodeRow button').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel'); state.recode=btn.dataset.r; saveLoop();
+}
+
+function advance(fromStep){
+  const next = fromStep+1;
+  const el = document.getElementById('ls'+(fromStep+1));
+  const cur = document.getElementById('ls'+fromStep);
+  // mark current done
+  cur.classList.remove('active'); cur.classList.add('done');
+  // activate next
+  el.classList.remove('locked'); el.classList.add('active','reveal-anim');
+  state.step = next; saveLoop();
+  el.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function saveLoop(){
+  state.prob = document.getElementById('probName').value;
+  state.pat = document.getElementById('patSel').value;
+  state.pattern = document.getElementById('rPattern').value;
+  state.insight = document.getElementById('rInsight').value;
+  state.trigger = document.getElementById('rTrigger').value;
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
+}
+
+function today(){
+  const d = new Date();
+  const z = n=>String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate());
+}
+
+function buildOut(){
+  saveLoop();
+  const wrap = document.getElementById('outboxWrap');
+  const hasAny = state.pattern || state.insight || state.trigger;
+  wrap.style.display = hasAny ? 'block' : 'none';
+  const hint = state.recode==='peek' ? 'Yes — peeked while recoding (needs another pass)' : (state.recode==='clean' ? 'No — rebuilt it clean' : '—');
+  const entry =
+`### ${today()} · ${state.prob||'<problem>'} · ${state.diff||'—'} · ${state.pat||'—'}
+- **Pattern:** ${state.pattern||''}
+- **Key insight:** ${state.insight||''}
+- **If I saw it cold again:** ${state.trigger||''}
+- **Did I need a hint?** ${hint}`;
+  document.getElementById('outPre').textContent = entry;
+  return entry;
+}
+
+function copyEntry(){
+  const entry = buildOut();
+  navigator.clipboard.writeText(entry).then(showToast).catch(()=>{
+    // fallback
+    const ta=document.createElement('textarea');ta.value=entry;document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');showToast();}catch(e){}
+    document.body.removeChild(ta);
+  });
+}
+function showToast(){
+  const t=document.getElementById('toast');t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+function resetLoop(){
+  state = {prob:"",diff:"",pat:"",recode:"",pattern:"",insight:"",trigger:"",step:1};
+  try{ localStorage.removeItem(LS_KEY); }catch(e){}
+  document.getElementById('probName').value="";
+  document.getElementById('patSel').value="";
+  document.getElementById('rPattern').value="";
+  document.getElementById('rInsight').value="";
+  document.getElementById('rTrigger').value="";
+  document.querySelectorAll('#diffRow button,#recodeRow button').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('outboxWrap').style.display='none';
+  // reset step states: only step 1 active
+  for(let i=1;i<=5;i++){
+    const el=document.getElementById('ls'+i);
+    el.classList.remove('active','done','reveal-anim');
+    if(i===1) el.classList.add('active');
+  }
+  window.scrollTo({top:0,behavior:'smooth'});
+  go('loop');
+}
+
+// restore on load
+(function restore(){
+  let saved=null;
+  try{ saved = JSON.parse(localStorage.getItem(LS_KEY)); }catch(e){}
+  if(!saved) return;
+  state = Object.assign(state, saved);
+  document.getElementById('probName').value = state.prob||"";
+  document.getElementById('patSel').value = state.pat||"";
+  document.getElementById('rPattern').value = state.pattern||"";
+  document.getElementById('rInsight').value = state.insight||"";
+  document.getElementById('rTrigger').value = state.trigger||"";
+  if(state.diff){ const b=document.querySelector('#diffRow button[data-d="'+state.diff+'"]'); if(b)b.classList.add('sel'); }
+  if(state.recode){ const b=document.querySelector('#recodeRow button[data-r="'+state.recode+'"]'); if(b)b.classList.add('sel'); }
+  // re-open to saved step
+  const s = state.step||1;
+  for(let i=1;i<s;i++){ const el=document.getElementById('ls'+i); el.classList.remove('active'); el.classList.add('done'); }
+  if(s>=1){ const el=document.getElementById('ls'+s); el.classList.remove('locked'); el.classList.add('active'); }
+  buildOut();
+})();
+</script>
+</body>
+</html>

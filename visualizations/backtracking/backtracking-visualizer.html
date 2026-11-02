@@ -1,0 +1,1590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backtracking Visualizer</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2431; --panel3:#222c3a;
+    --border:#2d3644; --text:#e6edf3; --dim:#8b95a5;
+    --accent:#7c9cff; --recurse:#58a6ff; --gold:#e3b341;
+    --inc:#3fb950; --exc:#8b95a5; --prune:#f85149; --success:#2ea043;
+    --mono:'SF Mono',ui-monospace,Menlo,Consolas,monospace;
+    --sans:'Segoe UI',system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.5;padding:0 0 60px}
+  a{color:var(--recurse)}
+  .wrap{max-width:1280px;margin:0 auto;padding:16px}
+  header h1{font-size:22px;margin:0 0 2px;letter-spacing:.3px}
+  header h1 span{color:var(--accent)}
+  .sub{color:var(--dim);font-size:13px;margin:0 0 12px}
+
+  /* intro */
+  details.intro{background:var(--panel);border:1px solid var(--border);border-radius:12px;margin-bottom:14px}
+  details.intro>summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none}
+  details.intro>summary::-webkit-details-marker{display:none}
+  details.intro>summary::before{content:'▸ ';color:var(--accent)}
+  details.intro[open]>summary::before{content:'▾ '}
+  .intro-body{padding:0 16px 16px;font-size:14px;color:#cdd6e0}
+  .intro-body h4{margin:14px 0 6px;color:var(--gold);font-size:13px;text-transform:uppercase;letter-spacing:.6px}
+  .heartbeat{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+  .beat{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--mono);font-size:13px}
+  .beat b{color:var(--inc)}
+  .beat .x{color:var(--prune)}
+  .beat .r{color:var(--recurse)}
+  .startlist{margin:6px 0;padding-left:18px}
+  .startlist li{margin:5px 0}
+  .tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:6px;background:var(--panel3);border:1px solid var(--border);color:var(--dim);margin-left:4px}
+  .warn{color:var(--gold)}
+
+  /* tabs */
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+  .tab{background:var(--panel);border:1px solid var(--border);color:var(--dim);padding:8px 14px;border-radius:9px;cursor:pointer;font-size:13px;font-weight:600;transition:.15s}
+  .tab:hover{color:var(--text);border-color:var(--accent)}
+  .tab.active{background:var(--accent);color:#0b1020;border-color:var(--accent)}
+
+  /* controls */
+  .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:10px}
+  .btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600}
+  .btn:hover{border-color:var(--accent)}
+  .btn.primary{background:var(--accent);color:#0b1020;border-color:var(--accent)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .ctl-sep{width:1px;height:22px;background:var(--border)}
+  .speed{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--dim)}
+  .stepc{font-family:var(--mono);font-size:13px;color:var(--dim);margin-left:auto}
+  .predict-toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--dim);user-select:none;cursor:pointer}
+  .inpgroup{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--dim)}
+  .inpgroup input{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:5px 8px;font-family:var(--mono);font-size:12px;width:120px}
+  .inpgroup input.num{width:52px}
+  .variant{display:flex;gap:4px;align-items:center;font-size:12px;color:var(--dim)}
+  .chip{background:var(--panel2);border:1px solid var(--border);padding:5px 10px;border-radius:7px;cursor:pointer;font-size:12px}
+  .chip.on{background:var(--recurse);color:#0b1020;border-color:var(--recurse)}
+
+  /* the "3 knobs" strip — same template, these blanks change */
+  .knobs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+  @media(max-width:1050px){.knobs{grid-template-columns:1fr 1fr}}
+  .knob{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:8px 11px}
+  .knob .kh{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--dim);margin-bottom:3px}
+  .knob .kv{font-family:var(--mono);font-size:12px;color:var(--text)}
+  .knob.reuse{border-color:var(--gold)}
+  .knob.reuse .kv{color:var(--gold)}
+  .knobs-label{font-size:12px;color:var(--dim);margin-bottom:6px}
+  .knobs-label b{color:var(--accent)}
+  .introtpl{background:#0a0e14;border-radius:8px;padding:10px 12px;font-family:var(--mono);font-size:12.5px;line-height:1.5;overflow:auto;color:#c7d0dc;margin:8px 0}
+  .introtpl .c{color:#6b7686;font-style:italic}
+  .introtpl .k{color:#ff7b72}
+  .introtpl .f{color:#d2a8ff}
+
+  /* layout grid */
+  .grid{display:grid;grid-template-columns:minmax(300px,0.95fr) minmax(0,1.5fr) minmax(260px,0.9fr);gap:12px}
+  @media(max-width:1050px){.grid{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;min-height:60px}
+  .panel h3{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--dim)}
+
+  /* code */
+  pre.code{margin:0;background:#0a0e14;border-radius:8px;padding:10px;overflow:auto;font-family:var(--mono);font-size:12.5px;line-height:1.55}
+  pre.code .ln{display:block;padding:0 6px;border-radius:4px;white-space:pre;color:#c7d0dc}
+  pre.code .ln .g{color:#6b7686}
+  pre.code .ln.hl{background:rgba(227,179,65,.16);box-shadow:inset 3px 0 0 var(--gold)}
+  .kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nu{color:#79c0ff}.cm{color:#6b7686;font-style:italic}.bi{color:#ffa657}
+
+  /* tree */
+  .treewrap{overflow:auto;background:#0a0e14;border-radius:8px;max-height:520px}
+  svg.tree{display:block}
+  .edge{fill:none;stroke:var(--border);stroke-width:1.6;transition:stroke .2s,opacity .2s}
+  .edge.inc{stroke:var(--inc)}
+  .edge.exc{stroke:var(--exc);stroke-dasharray:5 4}
+  .edge.prune{stroke:var(--prune);stroke-dasharray:3 3}
+  .edge.onpath{stroke:var(--gold);opacity:.85}
+  .edge.active{stroke:var(--gold);stroke-width:3}
+  .edge.hidden{display:none}
+  .elabel{font-family:var(--mono);font-size:10px;fill:var(--dim)}
+  .elabel.inc{fill:var(--inc)}.elabel.exc{fill:var(--exc)}.elabel.prune{fill:var(--prune)}
+  .elabel.hidden{display:none}
+  .node circle{fill:var(--panel2);stroke:var(--border);stroke-width:1.6;transition:.2s}
+  .node .plab{font-family:var(--mono);font-size:9.5px;fill:#aeb8c6;text-anchor:middle}
+  .node.visited circle{stroke:var(--recurse)}
+  .node.onpath circle{stroke:var(--gold)}
+  .node.active circle{fill:var(--gold);stroke:var(--gold)}
+  .node.active .plab{fill:#0b1020;font-weight:700}
+  .node.success circle{fill:var(--success);stroke:var(--inc)}
+  .node.success .plab{fill:#eafff0}
+  .node.pruned circle{fill:none;stroke:var(--prune);stroke-dasharray:3 3}
+  .node.pruned .plab{fill:var(--prune)}
+  .node.done circle{opacity:.55}
+  .node.hidden{display:none}
+
+  /* stack + path + results */
+  .stack{display:flex;flex-direction:column-reverse;gap:5px;min-height:40px}
+  .frame{background:var(--panel2);border:1px solid var(--border);border-left:3px solid var(--recurse);border-radius:7px;padding:6px 9px;font-family:var(--mono);font-size:12px}
+  .frame.top{border-left-color:var(--gold);background:var(--panel3)}
+  .frame .fmain{color:#dbe4ef}
+  .frame .fsub{color:var(--dim);font-size:11px;margin-top:2px}
+  .stack .empty{color:var(--dim);font-size:12px;font-style:italic}
+
+  .patharea{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-height:34px}
+  .pill{background:var(--panel3);border:1px solid var(--accent);color:#dbe4ef;border-radius:8px;padding:4px 10px;font-family:var(--mono);font-size:13px;animation:pop .25s}
+  @keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+  .path-empty{color:var(--dim);font-style:italic;font-size:12px}
+  .action{font-size:12px;font-family:var(--mono);padding:3px 8px;border-radius:7px;margin-top:8px;display:inline-block}
+  .action.add{background:rgba(63,185,80,.15);color:var(--inc);border:1px solid var(--inc)}
+  .action.pop{background:rgba(248,81,73,.15);color:var(--prune);border:1px solid var(--prune)}
+  .action.rec{background:rgba(46,160,67,.2);color:#6ee787;border:1px solid var(--success)}
+  .action.none{color:var(--dim)}
+
+  .results{display:flex;flex-direction:column;gap:5px;max-height:200px;overflow:auto}
+  .rescombo{background:rgba(46,160,67,.12);border:1px solid var(--success);border-radius:7px;padding:4px 9px;font-family:var(--mono);font-size:12.5px;color:#8fe9a4;animation:pop .3s}
+  .res-empty{color:var(--dim);font-style:italic;font-size:12px}
+
+  /* board (grid problems — Word Search) */
+  .boardwrap{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+  .board{display:grid;gap:5px}
+  .cell{width:46px;height:46px;border-radius:9px;border:1px solid var(--border);background:var(--panel2);
+        display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:18px;
+        font-weight:700;position:relative;transition:.15s;color:#c3cdda}
+  .cell .idx{position:absolute;top:2px;left:4px;font-size:8.5px;color:var(--dim);font-weight:400;letter-spacing:.3px}
+  .cell.used{background:rgba(63,185,80,.16);border-color:var(--inc);color:var(--inc)}
+  .cell.cur{background:var(--gold);border-color:var(--gold);color:#0b1020;transform:scale(1.07)}
+  .cell.cur .idx{color:#4a3c10}
+  .cell.fail{background:rgba(248,81,73,.2);border-color:var(--prune);color:var(--prune);transform:scale(.94)}
+  .boardside{display:flex;flex-direction:column;gap:8px;min-width:170px}
+  .wordstrip{display:flex;gap:3px;flex-wrap:wrap}
+  .wch{width:26px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--panel2);
+       display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:14px;color:var(--dim)}
+  .wch.done{background:rgba(63,185,80,.16);border-color:var(--inc);color:var(--inc)}
+  .wch.want{background:var(--gold);border-color:var(--gold);color:#0b1020;font-weight:700}
+  .bnote{font-size:12px;color:var(--dim);font-family:var(--mono);line-height:1.6}
+  .bnote b{color:var(--text)}
+  .bnote .oob{color:var(--prune)}
+
+  /* string strip (Palindrome Partitioning) */
+  .strwrap{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+  .strrow{display:flex;align-items:center;flex-wrap:wrap;gap:0}
+  .sch{width:36px;height:42px;border-radius:9px;border:1px solid var(--border);background:var(--panel2);
+       display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:18px;
+       font-weight:700;position:relative;transition:.15s;color:#c3cdda;margin:0 2px}
+  .sch .sidx{position:absolute;top:2px;left:4px;font-size:8.5px;color:var(--dim);font-weight:400}
+  .sch.done{background:rgba(63,185,80,.16);border-color:var(--inc);color:var(--inc)}
+  .sch.done .sidx{color:rgba(63,185,80,.7)}
+  .sch.cand{background:var(--gold);border-color:var(--gold);color:#0b1020;transform:translateY(-3px)}
+  .sch.cand .sidx{color:#4a3c10}
+  .sch.bad{background:rgba(248,81,73,.2);border-color:var(--prune);color:var(--prune);transform:scale(.94)}
+  .sch.rest{opacity:.4}
+  .cut{width:3px;height:36px;border-radius:2px;background:var(--inc);margin:0 3px;flex:0 0 auto;position:relative}
+  .cut.pending{background:var(--gold);opacity:.75}
+  .cut::after{content:'✂';position:absolute;top:-15px;left:-5px;font-size:11px;color:var(--inc)}
+  .cut.pending::after{color:var(--gold)}
+  .strside{display:flex;flex-direction:column;gap:6px;min-width:210px;font-family:var(--mono);font-size:12px;color:var(--dim);line-height:1.7}
+  .strside b{color:var(--text)}
+  .pyes{color:var(--inc);font-weight:700}
+  .pno{color:var(--prune);font-weight:700}
+  .revrow{background:#0a0e14;border-radius:7px;padding:6px 9px}
+
+  /* cost-of-this-run bar (brute force vs backtracking) */
+  .cost{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:10px}
+  .cost .ch{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim);margin-bottom:8px}
+  .cost .ch b{color:var(--text)}
+  .crow{display:grid;grid-template-columns:104px 1fr 168px;align-items:center;gap:10px;margin:4px 0}
+  @media(max-width:760px){.crow{grid-template-columns:92px 1fr;}.crow .cv{grid-column:2;text-align:left}}
+  .crow .cl{font-size:12px;color:var(--dim);font-family:var(--mono)}
+  .crow .cbar{background:#0a0e14;border-radius:5px;height:16px;overflow:hidden;display:block}
+  .crow .cbar i{display:block;height:100%;border-radius:5px;transition:width .35s}
+  .crow .cbar i.bad{background:linear-gradient(90deg,rgba(248,81,73,.55),var(--prune))}
+  .crow .cbar i.good{background:linear-gradient(90deg,rgba(63,185,80,.55),var(--inc))}
+  .crow .cv{font-family:var(--mono);font-size:12px;color:#c7d0dc}
+  .cost .cfoot{margin-top:8px;font-size:12.5px;color:#cdd6e0;border-top:1px solid var(--border);padding-top:7px}
+  .cost .cfoot .gold{color:var(--gold)}
+
+  /* per-tab explainer */
+  details.explain{background:var(--panel);border:1px solid var(--accent);border-radius:12px;margin-bottom:10px}
+  details.explain>summary{cursor:pointer;padding:10px 14px;font-weight:600;font-size:13.5px;list-style:none;color:var(--accent)}
+  details.explain>summary::-webkit-details-marker{display:none}
+  details.explain>summary::before{content:'▸ ';}
+  details.explain[open]>summary::before{content:'▾ ';}
+  .explain-body{padding:0 14px 14px;font-size:13.5px;color:#cdd6e0}
+  .explain-body pre{background:#0a0e14;border-radius:8px;padding:10px 12px;font-family:var(--mono);
+                    font-size:12.5px;line-height:1.6;overflow:auto;margin:8px 0;color:#c7d0dc}
+  .explain-body h5{margin:16px 0 6px;font-size:13px;color:var(--gold);letter-spacing:.2px}
+  .explain-body .ok{color:var(--inc)}
+  .explain-body .no{color:var(--prune)}
+  .tryb{background:var(--panel2);border:1px solid var(--accent);color:var(--text);padding:6px 12px;
+        border-radius:8px;cursor:pointer;font-family:var(--mono);font-size:12.5px;margin:2px 6px 2px 0}
+  .tryb:hover{background:var(--accent);color:#0b1020}
+  /* NB: not .cut — that's the string panel's scissors bar, a global rule */
+  .explain-body .cx{color:var(--gold);font-weight:700}
+
+  /* narration */
+  .narration{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--gold);border-radius:10px;padding:12px 14px;margin-top:12px;font-size:14px;min-height:44px}
+  .narration .ntype{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.5px;padding:2px 7px;border-radius:6px;margin-right:8px;background:var(--panel3);color:var(--dim)}
+
+  /* legend */
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--dim);margin-top:10px;padding:8px 12px;background:var(--panel);border:1px solid var(--border);border-radius:10px}
+  .legend .li{display:flex;align-items:center;gap:5px}
+  .dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+
+  /* predict overlay */
+  .predict{position:fixed;inset:0;background:rgba(5,8,13,.75);display:none;align-items:center;justify-content:center;z-index:50}
+  .predict.show{display:flex}
+  .predict-card{background:var(--panel);border:1px solid var(--accent);border-radius:16px;padding:22px 24px;max-width:440px;text-align:center}
+  .predict-card h3{margin:0 0 6px;font-size:18px}
+  .predict-card p{color:var(--dim);font-size:13px;margin:0 0 16px}
+  .predict-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .popt{padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--panel2);cursor:pointer;font-weight:600;font-size:14px;transition:.15s}
+  .popt:hover{border-color:var(--accent);transform:translateY(-2px)}
+  .popt small{display:block;font-weight:400;color:var(--dim);font-size:11px;margin-top:3px}
+  .popt.correct{background:var(--success);color:#eafff0;border-color:var(--inc)}
+  .popt.wrong{background:rgba(248,81,73,.2);border-color:var(--prune)}
+  .predict-skip{margin-top:14px;font-size:12px;color:var(--dim);cursor:pointer}
+
+  /* dual (recursion x iteration) */
+  .dual{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:1050px){.dual{grid-template-columns:1fr}}
+  .dual .panel h3 .badge{font-size:10px;padding:1px 6px;border-radius:5px;margin-left:6px;background:var(--panel3);color:var(--dim)}
+  .equiv{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:12px;font-size:13.5px;color:#cdd6e0}
+  .hidden-block{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><span>◆</span> Backtracking Visualizer</h1>
+    <p class="sub">Watch the recursion stack grow, the decision tree unfold, and the <b>choose → recurse → un-choose</b> heartbeat run — one step at a time.</p>
+  </header>
+
+  <details class="intro">
+    <summary>Read me first — the one mental model + where to learn it</summary>
+    <div class="intro-body">
+      <p><b>Backtracking is ONE algorithm.</b> It's a depth-first walk of a <i>decision tree</i>: try a choice, recurse, then undo it — exploring every path but abandoning ("pruning") the ones that can't lead to a valid solution. Learn <b>one template</b> and every tab below is just that template with three blanks filled in.</p>
+
+      <h4>The universal template</h4>
+      <pre class="introtpl"><span class="k">def</span> <span class="f">backtrack</span>(state, choices, results):
+    <span class="k">if</span> is_complete(state):            <span class="c"># ← BASE CASE</span>
+        results.append(copy(state))
+        <span class="k">return</span>
+    <span class="k">for</span> choice <span class="k">in</span> available(state):   <span class="c"># ← CHOICES (+ pruning)</span>
+        make_choice(state, choice)    <span class="c"># 1. CHOOSE</span>
+        <span class="f">backtrack</span>(state, choices, results)  <span class="c"># 2. EXPLORE</span>
+        undo_choice(state, choice)    <span class="c"># 3. UNCHOOSE</span></pre>
+      <p>This is the template from <a href="https://algomaster.io/learn/dsa/backtracking-introduction" target="_blank" rel="noopener">AlgoMaster's backtracking guide</a> — the primary source this tool is built around.</p>
+
+      <h4>The three steps (the heartbeat)</h4>
+      <div class="heartbeat">
+        <div class="beat"><b>state.append(x)</b> &nbsp;→ 1. CHOOSE</div>
+        <div class="beat"><span class="r">backtrack(...)</span> &nbsp;→ 2. EXPLORE</div>
+        <div class="beat"><b class="x">state.pop()</b> &nbsp;→ 3. UNCHOOSE</div>
+      </div>
+      <p><b>Analogy:</b> you're walking a maze dropping a breadcrumb at each step (<code>append</code>). When a path dead-ends or succeeds, you walk back <i>picking the breadcrumb up</i> (<code>pop</code>) to try the next turn. The <span class="x">UNCHOOSE (pop)</span> is the step everyone forgets — this tool makes it loud.</p>
+
+      <h4>Every problem = the template + 3 knobs</h4>
+      <p>Open any tab and read the strip under the controls. It shows the only things that change between problems:</p>
+      <ul class="startlist">
+        <li><b>① is_complete?</b> — when do we record? (subsets: always · combinations: <code>len==k</code> · combo-sum: <code>total==target</code> · palindrome: <code>start==len(s)</code>)</li>
+        <li><b>② available choices</b> — what does the <code>for</code> loop iterate, and what gets <b>pruned</b>?</li>
+        <li><b>③ reuse an element?</b> — the next call's start is <code>i</code> (reuse, Combination Sum) vs <code>i+1</code> (no reuse, everything else).</li>
+      </ul>
+
+      <h4>Handling duplicates (Combination Sum II)</h4>
+      <p>Sort first, then skip a choice when <code>i &gt; start and nums[i] == nums[i-1]</code>. That skips repeats <i>at the same tree depth</i> (which is what creates duplicate combos) while still allowing that value deeper down. It's <code>i &gt; start</code>, not <code>i &gt; 0</code>, for exactly that reason.</p>
+
+      <h4>Cutting a string instead of picking numbers (Palindrome Partitioning, LC 131)</h4>
+      <p><b>What the problem asks.</b> Given <code>s = "aab"</code>, chop it into consecutive pieces so that <i>every single piece reads the same forwards and backwards</i>. Return every possible way. For <code>"aab"</code> there are exactly two: <code>["a","a","b"]</code> and <code>["aa","b"]</code>. The one-piece answer <code>["aab"]</code> fails, because "aab" reversed is "baa". Note the pieces are always <b>in order and touching</b> — you never rearrange or drop characters, you only decide where the scissors go.</p>
+
+      <p><b>The one reframe that makes it click.</b> You are not choosing <i>which characters</i> to take — the characters are fixed. You are choosing <b>where to put the cuts</b>. A string of length n has n−1 gaps between characters, and each gap is either cut or not cut:</p>
+      <pre class="introtpl">   a   a   b          <span class="c"># the string</span>
+     ↑   ↑            <span class="c"># 2 gaps → 2² = 4 ways to cut</span>
+
+  a | a | b    ✓ every piece is a palindrome  → keep
+  aa  | b      ✓ "aa" is a palindrome         → keep
+  a | ab       ✗ "ab" reversed is "ba"        → reject
+  aab          ✗ "aab" reversed is "baa"      → reject</pre>
+      <p>So it's the same yes/no decision tree as Subsets, wearing a costume. Backtracking's whole job is to walk those 4 candidates <i>without</i> building them all first — and to abandon a branch the instant a piece fails the palindrome test.</p>
+
+      <p><b>Why one number, <code>start</code>, is the entire state.</b> The moment you cut "a" off the front of "aab", what's left is "partition <code>ab</code>" — the exact same problem, just smaller. So <code>start</code> means: <i>"every character before index <code>start</code> is already safely cut into palindromes; your job is the rest."</i> That's also why the base case is <code>start == len(s)</code>: you've run out of string, which means every character got used <b>and</b> every piece already passed the palindrome check on its way in — so whatever is in <code>state</code> is a valid answer, no final verification needed.</p>
+
+      <p><b>The three blanks, filled in.</b></p>
+      <ul class="startlist">
+        <li><b>① is_complete?</b> <code>start == len(s)</code> — the string is used up.</li>
+        <li><b>② available choices</b> — the <code>for end</code> loop <i>slides the cut one character further each time</i>. From <code>start=0</code> in "aab" the candidate pieces are "a", then "aa", then "aab". That loop is the only place choices come from.</li>
+        <li><b>③ pruning</b> <code>if not is_pal(piece): continue</code> — a piece that isn't a palindrome can't appear in <i>any</i> answer, so don't recurse into it; just try a longer piece instead. <code>continue</code> (skip this one choice), not <code>break</code> — a longer piece can still be a palindrome even when a shorter one wasn't ("ab" ✗ but "aba" ✓).</li>
+        <li><b>④ reuse?</b> No. The next call starts at <code>end + 1</code> — right after the piece you just committed — so no character is ever used twice.</li>
+      </ul>
+
+      <p><b>The one line that confuses everyone:</b> <code>piece = s[start:end + 1]</code>. Python slices are end-<i>exclusive</i>, so to <i>include</i> the character sitting at index <code>end</code> you have to slice up to <code>end + 1</code>. The <code>+1</code> is Python bookkeeping, not algorithm. Same for <code>t[::-1]</code> — that's just "t reversed".</p>
+
+      <p><b>When you step the tab:</b> the string panel shows <span style="color:var(--inc)">green</span> characters = pieces already committed (with a ✂ at each committed cut), <span style="color:var(--gold)">gold</span> = the piece being tested <i>right now</i>, dim = the part you haven't reached. Watch what happens after <code>["a","a","b"]</code> is recorded: the pops walk you all the way back to <code>start=0</code>, and the loop tries the <b>longer</b> piece "aa". That un-choosing is the entire point of backtracking.</p>
+
+      <h4>Same template on a grid (Word Search, LC 79)</h4>
+      <p>Nothing new — only the three blanks change. The <b>choices</b> are the 4 neighbours instead of a <code>for i in range(...)</code>; the <b>state</b> is the path of cells you've stepped on; and <b>CHOOSE / UNCHOOSE</b> is <code>board[r][c] = '#'</code> … <code>board[r][c] = word[i]</code>. That mark-and-restore <i>is</i> the visited set — no separate <code>seen</code> structure needed, and restoring it on the way out is what lets a different path reuse the cell.</p>
+      <p>Two details worth noticing while you step it: (1) the bounds test comes <b>first</b> in the <code>or</code> chain, so <code>board[r][c]</code> is never indexed out of range; (2) since <code>word[i]</code> is a letter, <code>word[i] != board[r][c]</code> <i>already</i> rejects a <code>'#'</code> cell — the explicit <code>board[r][c] == '#'</code> check is belt-and-braces, and the visualizer labels that case separately so you can see which rule did the pruning.</p>
+
+      <h4>Start here (primary source + fact-checked picks)</h4>
+      <ul class="startlist">
+        <li><b>Primary read:</b> <a href="https://algomaster.io/learn/dsa/backtracking-introduction" target="_blank" rel="noopener">AlgoMaster — Introduction to Backtracking</a> — the source this tool mirrors: Choose→Explore→Unchoose, the template, the <code>[1,2,3]</code> subsets trace, duplicate handling. <span class="warn">Freemium: intuition free, per-problem code often paywalled.</span> <span class="tag">~15 min</span></li>
+        <li><b>Read (100% free):</b> <a href="https://blog.algomaster.io/p/20-dsa-patterns" target="_blank" rel="noopener">AlgoMaster — 20 DSA Patterns</a> (Backtracking = pattern #17). <span class="tag">blog</span></li>
+        <li><b>Watch:</b> <a href="https://www.youtube.com/watch?v=GBKI9VSKdGg" target="_blank" rel="noopener">NeetCode — Combination Sum (LeetCode 39)</a>. <span class="tag">video</span></li>
+        <li><b>Play:</b> <a href="https://recursee.com/" target="_blank" rel="noopener">RecurSee</a> — paste your <i>own</i> recursive code and step the call tree. <span class="tag">tool</span></li>
+      </ul>
+      <p style="margin-top:8px"><b>Flow:</b> read the AlgoMaster intro → step every tab here, checking the 3-knob strip each time → then paste your own variants into RecurSee. The <b>Recursion × Iteration</b> tab shows why the template uses a <code>for</code> loop instead of the older binary include/skip form.</p>
+    </div>
+  </details>
+
+  <div class="tabs" id="tabs"></div>
+
+  <!-- SINGLE MODE VIEW -->
+  <div id="singleView">
+    <div class="controls">
+      <div class="inpgroup" id="inputArea"></div>
+      <div class="variant hidden-block" id="variantArea">
+        <span>view:</span>
+        <span class="chip on" data-variant="binary" id="chipBinary">binary (include/skip)</span>
+        <span class="chip" data-variant="loop" id="chipLoop">for-loop</span>
+      </div>
+      <div class="ctl-sep"></div>
+      <button class="btn" id="btnReset">⏮ Reset</button>
+      <button class="btn" id="btnPrev">◀ Prev</button>
+      <button class="btn primary" id="btnPlay">▶ Play</button>
+      <button class="btn" id="btnNext">Next ▶</button>
+      <div class="speed">speed <input type="range" id="speed" min="120" max="1400" value="650" step="20"></div>
+      <label class="predict-toggle"><input type="checkbox" id="predictToggle"> 🔮 Predict next</label>
+      <div class="stepc" id="stepc">0 / 0</div>
+    </div>
+
+    <div class="knobs-label">Same universal template — this problem just fills in <b>3 knobs</b>:</div>
+    <div class="knobs" id="knobsPanel"></div>
+
+    <div id="costPanel"></div>
+    <div id="explainPanel"></div>
+
+    <div class="grid">
+      <div class="panel">
+        <h3>Code</h3>
+        <pre class="code" id="codePanel"></pre>
+      </div>
+      <div>
+        <div id="boardWrap" class="hidden-block">
+          <div class="panel" style="margin-bottom:12px">
+            <h3>Board <span style="color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0">— <code>#</code> = cell locked by the current path</span></h3>
+            <div id="boardPanel"></div>
+          </div>
+        </div>
+        <div id="strWrap" class="hidden-block">
+          <div class="panel" style="margin-bottom:12px">
+            <h3>The string <span style="color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0">— ✂ = a committed cut · gold = the piece being tested now</span></h3>
+            <div id="strPanel"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>Decision Tree <span style="color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0">— each node is a call; label = partial solution</span></h3>
+          <div class="treewrap"><svg class="tree" id="treeSvg"></svg></div>
+        </div>
+      </div>
+      <div>
+        <div class="panel" style="margin-bottom:12px">
+          <h3>Recursion Stack <span style="color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0">(top = running now)</span></h3>
+          <div class="stack" id="stackPanel"></div>
+        </div>
+        <div class="panel" style="margin-bottom:12px">
+          <h3>state <span style="color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0">— the partial being built</span></h3>
+          <div class="patharea" id="pathPanel"></div>
+          <div id="actionPanel"></div>
+        </div>
+        <div class="panel">
+          <h3>results</h3>
+          <div class="results" id="resPanel"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="narration" id="narration"></div>
+
+    <div class="legend">
+      <div class="li"><span class="dot" style="background:var(--gold)"></span> running now</div>
+      <div class="li"><span class="dot" style="background:var(--recurse)"></span> visited / on stack</div>
+      <div class="li"><span class="dot" style="background:var(--success)"></span> recorded ✓</div>
+      <div class="li"><span class="dot" style="border:2px dashed var(--prune);background:transparent"></span> pruned ✂️</div>
+      <div class="li"><span style="color:var(--inc)">— include</span></div>
+      <div class="li"><span style="color:var(--exc)">--- skip</span></div>
+    </div>
+  </div>
+
+  <!-- DUAL MODE VIEW (Recursion x Iteration) -->
+  <div id="dualView" class="hidden-block">
+    <div class="controls">
+      <span style="font-size:13px;color:var(--dim)">Same problem — <b style="color:var(--text)">Combinations(n=4, k=2)</b> — two shapes, stepped together.</span>
+      <div class="ctl-sep"></div>
+      <button class="btn" id="dReset">⏮ Reset</button>
+      <button class="btn" id="dPrev">◀ Prev</button>
+      <button class="btn primary" id="dPlay">▶ Play</button>
+      <button class="btn" id="dNext">Next ▶</button>
+      <div class="speed">speed <input type="range" id="dSpeed" min="120" max="1400" value="650" step="20"></div>
+      <div class="stepc" id="dStepc"></div>
+    </div>
+    <div class="dual">
+      <div class="panel">
+        <h3>Shape A — Binary recursion <span class="badge">no loop</span></h3>
+        <pre class="code" id="codeA" style="max-height:200px"></pre>
+        <div class="treewrap" style="max-height:340px;margin-top:8px"><svg class="tree" id="treeA"></svg></div>
+        <div class="narration" id="narA" style="margin-top:8px"></div>
+      </div>
+      <div class="panel">
+        <h3>Shape B — For-loop + recursion <span class="badge">loop makes siblings</span></h3>
+        <pre class="code" id="codeB" style="max-height:200px"></pre>
+        <div class="treewrap" style="max-height:340px;margin-top:8px"><svg class="tree" id="treeB"></svg></div>
+        <div class="narration" id="narB" style="margin-top:8px"></div>
+      </div>
+    </div>
+    <div class="equiv">
+      <b>The equivalence:</b> Shape A decides <i>per element</i> — "include 1? … include 2? …" — so its tree is deep and binary. Shape B's <code>for j in range(i, n+1)</code> jumps <i>straight to the next element it will include</i> and never spends a node on "skip". <b>The for-loop is exactly Shape A's chain of "skip" branches collapsed into one hop.</b> Both enumerate the same 6 combinations; Shape B just visits far fewer dead nodes.
+    </div>
+  </div>
+</div>
+
+<!-- predict overlay -->
+<div class="predict" id="predictOverlay">
+  <div class="predict-card">
+    <h3>🔮 What happens next?</h3>
+    <p>Look at the code line, the stack, and the path. Predict the algorithm's next move.</p>
+    <div class="predict-opts">
+      <div class="popt" data-guess="RECURSE">Go deeper<small>recurse into a choice</small></div>
+      <div class="popt" data-guess="POP">Backtrack<small>pop / undo a choice</small></div>
+      <div class="popt" data-guess="PRUNE">Prune<small>cut this branch (break/return/skip)</small></div>
+      <div class="popt" data-guess="RECORD">Record<small>found one — save it</small></div>
+    </div>
+    <div class="predict-skip" id="predictSkip">skip prediction →</div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   BACKTRACKING VISUALIZER
+   Architecture: "record, then replay".
+   Each tracer runs the real recursion ONCE and emits a flat
+   EVENTS[] array. The stepper just walks that array; the tree
+   geometry is laid out once and nodes/edges toggle classes.
+   ============================================================ */
+
+/* ---------- tiny syntax highlighter for the code panels ---------- */
+const KW = /\b(def|for|in|range|if|return|break|continue|len|and|or|not|True|False)\b/g;
+function hlLine(raw){
+  // escape
+  let s = raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // comments — a '#' that starts a token, not the '#' inside a quoted char
+  s = s.replace(/(^|\s)(#(?!').*)$/, (m,pre,cm) => pre+'<span class="cm">'+cm+'</span>');
+  // strings
+  s = s.replace(/('[^']*')/g,'<span class="st">$1</span>');
+  // numbers
+  s = s.replace(/\b(\d+)\b/g,'<span class="nu">$1</span>');
+  // keywords / builtins
+  s = s.replace(KW, m => {
+    if(m==='len'||m==='range') return '<span class="bi">'+m+'</span>';
+    if(m==='True'||m==='False') return '<span class="nu">'+m+'</span>';
+    return '<span class="kw">'+m+'</span>';
+  });
+  // function-def names + calls (dfs/helper/subsets...)
+  s = s.replace(/\b(backtrack|dfs|helper2?|combinationSum2?|subsets|combinations2?|is_pal|partition)\b/g,'<span class="fn">$1</span>');
+  return s;
+}
+
+/* ---------- generic tree layout (two-pass) ---------- */
+function layoutTree(nodes, rootId){
+  let leaf = 0, maxDepth = 0;
+  function assignLeaf(id){
+    const n = nodes[id];
+    if(n.children.length===0){ n._leaf = leaf++; }
+    else n.children.forEach(assignLeaf);
+  }
+  function computeX(id){
+    const n = nodes[id];
+    if(n.children.length===0){ n.gx = n._leaf; return n.gx; }
+    const xs = n.children.map(computeX);
+    n.gx = (Math.min(...xs)+Math.max(...xs))/2;
+    return n.gx;
+  }
+  function depth(id,d){
+    const n = nodes[id]; n.depth=d; if(d>maxDepth) maxDepth=d;
+    n.children.forEach(c=>depth(c,d+1));
+  }
+  assignLeaf(rootId); computeX(rootId); depth(rootId,0);
+  return {leaves: Math.max(1,leaf), maxDepth};
+}
+
+/* ---------- build the SVG once for a trace ---------- */
+function buildTreeSVG(svg, nodes, rootId){
+  const {leaves, maxDepth} = layoutTree(nodes, rootId);
+  const CW = 62, LH = 74, MX = 34, MY = 30, R = 15;
+  const W = MX*2 + (leaves-1)*CW;
+  const H = MY*2 + maxDepth*LH;
+  svg.setAttribute('width', Math.max(W, 200));
+  svg.setAttribute('height', Math.max(H, 120));
+  const px = n => MX + n.gx*CW;
+  const py = n => MY + n.depth*LH;
+  let edges='', labels='', circles='';
+  for(const id in nodes){
+    const n = nodes[id];
+    n.px = px(n); n.py = py(n);
+  }
+  for(const id in nodes){
+    const n = nodes[id];
+    if(n.parent==null) continue;
+    const p = nodes[n.parent];
+    edges += `<path class="edge ${n.kind} hidden" data-edge="${n.id}" d="M ${p.px} ${p.py+R} L ${n.px} ${n.py-R}"></path>`;
+    // edge label at midpoint
+    const mx=(p.px+n.px)/2, my=(p.py+R + n.py-R)/2;
+    labels += `<text class="elabel ${n.kind} hidden" data-elabel="${n.id}" x="${mx+4}" y="${my}">${n.label||''}</text>`;
+  }
+  for(const id in nodes){
+    const n = nodes[id];
+    circles += `<g class="node hidden" data-node="${n.id}">
+      <circle cx="${n.px}" cy="${n.py}" r="${R}"></circle>
+      <text class="plab" x="${n.px}" y="${n.py+3.5}">${n.plab||''}</text>
+    </g>`;
+  }
+  svg.innerHTML = edges + labels + circles;
+}
+
+/* ---------- STEPPER (single-mode engine) ---------- */
+class Stepper{
+  constructor(refs){ this.r = refs; this.idx=0; }
+  load(ex){
+    this.ex = ex;
+    const t = ex.tracer(ex.inputs);
+    this.events = t.events;
+    this.nodes = t.nodes;
+    this.rootId = t.root;
+    this.stats = t.stats || null;
+    this.codeLines = ex.code;
+    this.computeMeta();
+    buildTreeSVG(this.r.tree, this.nodes, this.rootId);
+    this.renderCodeStatic();
+    this.idx = 0;
+    this.render();
+  }
+  computeMeta(){
+    for(const id in this.nodes){
+      const n=this.nodes[id];
+      n.enterStep = (n.isPrune? null : (n.id===this.rootId?0:null));
+      n.successStep=null; n.returnStep=null;
+    }
+    this.events.forEach((e,k)=>{
+      const n = this.nodes[e.nodeId];
+      if(!n) return;
+      if(e.type==='ENTER' && n.enterStep==null) n.enterStep=k;
+      if(e.type==='RECORD') n.successStep=k;
+      if(e.type==='PRUNE'){ n.prunedStep=k; }
+      if(e.type==='RETURN') n.returnStep=k;
+    });
+  }
+  renderCodeStatic(){
+    this.r.code.innerHTML = this.codeLines.map((l,i)=>
+      `<span class="ln" data-line="${i}">${hlLine(l)||'&nbsp;'}</span>`).join('');
+  }
+  render(){
+    const e = this.events[this.idx];
+    // code highlight
+    this.r.code.querySelectorAll('.ln').forEach(el=>{
+      el.classList.toggle('hl', +el.dataset.line===e.line);
+    });
+    const hl = this.r.code.querySelector('.ln.hl');
+    if(hl) hl.scrollIntoView({block:'nearest'});
+    this.updateTree(e);
+    if(this.r.board) renderBoard(this.r.board, e);
+    if(this.r.str) renderStr(this.r.str, e);
+    if(this.r.stack) this.renderStack(e);
+    if(this.r.path) this.renderPath(e);
+    if(this.r.res) this.renderResults(e);
+    this.renderNarration(e);
+    if(this.r.stepc) this.r.stepc.textContent = `${this.idx+1} / ${this.events.length}`;
+    if(this.r.btnPrev) this.r.btnPrev.disabled = this.idx<=0;
+    if(this.r.btnNext) this.r.btnNext.disabled = this.idx>=this.events.length-1;
+  }
+  ancestorsOf(id){
+    const set=new Set(); let cur=this.nodes[id];
+    while(cur && cur.parent!=null){ set.add(cur.id); cur=this.nodes[cur.parent]; }
+    return set;
+  }
+  updateTree(e){
+    const k=this.idx;
+    const activeId = e.nodeId;
+    const onpath = this.ancestorsOf(activeId);
+    for(const id in this.nodes){
+      const n=this.nodes[id];
+      const g = this.r.tree.querySelector(`[data-node="${n.id}"]`);
+      const ed = this.r.tree.querySelector(`[data-edge="${n.id}"]`);
+      const el = this.r.tree.querySelector(`[data-elabel="${n.id}"]`);
+      let visible;
+      if(n.isPrune) visible = (n.prunedStep!=null && k>=n.prunedStep);
+      else visible = (n.enterStep!=null && k>=n.enterStep);
+      if(!g) continue;
+      g.className.baseVal = 'node';
+      if(!visible){ g.classList.add('hidden'); if(ed) ed.classList.add('hidden'); if(el) el.classList.add('hidden'); continue; }
+      if(ed) ed.classList.remove('hidden'); if(el) el.classList.remove('hidden');
+      let cls='visited';
+      if(n.prunedStep!=null && k>=n.prunedStep) cls='pruned';
+      else if(n.successStep!=null && k>=n.successStep) cls='success';
+      else if(n.returnStep!=null && k>=n.returnStep) cls='done';
+      if(n.id===activeId) cls='active';
+      else if(onpath.has(n.id) && cls!=='success' && cls!=='pruned') cls='onpath';
+      g.classList.add(cls);
+      if(ed){ ed.className.baseVal='edge '+n.kind;
+        if(n.id===activeId) ed.classList.add('active');
+        else if(onpath.has(n.id)) ed.classList.add('onpath'); }
+    }
+  }
+  renderStack(e){
+    const frames=e.frames||[];
+    if(frames.length===0){ this.r.stack.innerHTML='<div class="empty">(stack empty — call finished)</div>'; return; }
+    this.r.stack.innerHTML = frames.map((f,i)=>
+      `<div class="frame ${i===frames.length-1?'top':''}">
+        <div class="fmain">${f.main}</div>
+        ${f.sub?`<div class="fsub">${f.sub}</div>`:''}
+      </div>`).join('');
+  }
+  renderPath(e){
+    const p=e.path||[];
+    this.r.path.innerHTML = p.length? p.map(v=>`<span class="pill">${v}</span>`).join('')
+      : '<span class="path-empty">[ ] empty</span>';
+    let a='<span class="action none">—</span>';
+    if(e.type==='APPEND') a=`<span class="action add">append ${e.chose} &nbsp;(choose)</span>`;
+    else if(e.type==='POP') a=`<span class="action pop">pop ${e.popped??''} &nbsp;⟵ backtrack / un-choose</span>`;
+    else if(e.type==='RECORD') a=`<span class="action rec">record this path ✓</span>`;
+    this.r.action.innerHTML=a;
+  }
+  renderResults(e){
+    const res=e.results||[];
+    this.r.res.innerHTML = res.length? res.map(r=>`<div class="rescombo">[${r.join(', ')}]</div>`).join('')
+      : '<span class="res-empty">none yet</span>';
+  }
+  renderNarration(e){
+    this.r.narration.innerHTML = `<span class="ntype">${e.type}</span>${e.narration}`;
+  }
+  next(force){
+    if(this.idx>=this.events.length-1) return false;
+    this.idx++; this.render(); return true;
+  }
+  prev(){ if(this.idx>0){ this.idx--; this.render(); } }
+  reset(){ this.idx=0; this.render(); }
+  peekNextType(){ return this.idx<this.events.length-1 ? this.events[this.idx+1].type : null; }
+}
+
+/* ============================================================
+   TRACERS  — one per example. Each mirrors the Python exactly
+   and returns {events, nodes, root, res}.
+   nodes: map id -> {id,parent,children[],label,plab,kind,isPrune}
+   ============================================================ */
+
+function makeTB(){
+  const nodes={}; let nid=0;
+  function node(parent,label,kind){
+    const id=nid++;
+    nodes[id]={id,parent,children:[],label:label||'',plab:'',kind:kind||'root',isPrune:kind==='prune'};
+    if(parent!=null) nodes[parent].children.push(id);
+    return id;
+  }
+  return {nodes,node};
+}
+
+/* --- Subsets — universal template; every partial IS a solution --- */
+function traceSubsets(inp){
+  const nums=inp.nums;
+  const {nodes,node}=makeTB();
+  const events=[], results=[], state=[], frames=[];
+  const root=node(null,null,'root'); nodes[root].plab='[ ]';
+  function snap(){ return frames.map(f=>({main:f.main,sub:f.sub})); }
+  function emit(type,line,nodeId,narration,extra){
+    events.push(Object.assign({type,line,nodeId,narration,path:[...state],results:results.map(r=>[...r]),frames:snap()},extra||{}));
+  }
+  function backtrack(start, myId){
+    const fr={main:`backtrack(start=${start})`,sub:`state=[${state}]`}; frames.push(fr);
+    nodes[myId].plab='['+state.join(',')+']';
+    emit('ENTER',1,myId,`Enter <b>backtrack(start=${start})</b>. state=[${state}].`);
+    results.push([...state]);
+    emit('RECORD',2,myId,`<b>is_complete?</b> For subsets every state is a solution → record <b>[${state}]</b> on entry (not just at leaves). ✓`);
+    for(let i=start;i<nums.length;i++){
+      fr.sub=`choices: i=${i} ∈ [${start}..${nums.length-1}] → nums[${i}]=${nums[i]}`;
+      emit('LOOP',3,myId,`Available choice: nums[<b>i=${i}</b>]=${nums[i]}.`);
+      state.push(nums[i]);
+      const c=node(myId,`+${nums[i]}`,'inc'); nodes[c].plab='['+state.join(',')+']';
+      emit('APPEND',4,myId,`<b>1. CHOOSE</b> ${nums[i]}. state=[${state}].`,{chose:nums[i]});
+      emit('RECURSE',5,c,`<b>2. EXPLORE</b> → backtrack(start=${i+1}) (start after i ⇒ no reuse/reorder).`);
+      backtrack(i+1, c);
+      const popped=state.pop();
+      emit('POP',6,myId,`<b>3. UNCHOOSE</b>: pop ${popped} so the loop can try the next choice. state=[${state}].`,{popped});
+    }
+    frames.pop();
+    emit('RETURN',1,myId,`All choices tried → return from backtrack(start=${start}).`);
+  }
+  backtrack(0, root);
+  return {events,nodes,root,res:results};
+}
+
+/* --- Combinations binary (Shape A) helper1 --- */
+function traceCombinationsBinary(inp){
+  const n=inp.n, k=inp.k;
+  const {nodes,node}=makeTB();
+  const events=[], res=[], cur=[], frames=[];
+  const root=node(null,null,'root'); nodes[root].plab='[ ]';
+  function snap(){ return frames.map(f=>({main:f.main,sub:f.sub})); }
+  function emit(type,line,nodeId,narration,extra){
+    events.push(Object.assign({type,line,nodeId,narration,path:[...cur],results:res.map(r=>[...r]),frames:snap()},extra||{}));
+  }
+  function helper(i, myId){
+    const fr={main:`helper(i=${i})`,sub:`cur=[${cur}], need ${k}`}; frames.push(fr);
+    nodes[myId].plab='['+cur.join(',')+']';
+    emit('ENTER',5,myId,`Enter <b>helper(i=${i})</b>. cur=[${cur}] (size ${cur.length}/${k}).`);
+    if(cur.length===k){
+      res.push([...cur]);
+      emit('RECORD',7,myId,`cur has ${k} elements → record <b>[${cur}]</b>. ✓`);
+      frames.pop(); emit('RETURN',8,myId,`Return.`); return;
+    }
+    if(i>n){
+      emit('PRUNE',10,myId,`i=${i} > n=${n} and we still need more — dead end, <b>return</b> without recording. ✂️`,{reason:'i>n'});
+      frames.pop(); emit('RETURN',10,myId,`Return (dead end).`); return;
+    }
+    cur.push(i);
+    const inc=node(myId,`+${i}`,'inc'); nodes[inc].plab='['+cur.join(',')+']';
+    emit('APPEND',11,myId,`<b>CHOOSE</b>: include ${i}. cur=[${cur}].`,{chose:i});
+    emit('RECURSE',12,inc,`Explore with ${i} included → helper(${i+1}).`);
+    helper(i+1, inc);
+    const popped=cur.pop();
+    emit('POP',13,myId,`<b>UN-CHOOSE</b>: pop ${popped}. cur=[${cur}].`,{popped});
+    const exc=node(myId,`skip ${i}`,'exc'); nodes[exc].plab='['+cur.join(',')+']';
+    emit('RECURSE',14,exc,`Other choice: <b>skip</b> ${i} → helper(${i+1}).`);
+    helper(i+1, exc);
+    frames.pop(); emit('RETURN',5,myId,`Both choices for ${i} done → return.`);
+  }
+  helper(1, root);
+  return {events,nodes,root,res};
+}
+
+/* --- Combinations — universal template (Shape B for-loop) --- */
+function traceCombinations(inp){
+  const n=inp.n, k=inp.k;
+  const {nodes,node}=makeTB();
+  const events=[], results=[], state=[], frames=[];
+  const root=node(null,null,'root'); nodes[root].plab='[ ]';
+  function snap(){ return frames.map(f=>({main:f.main,sub:f.sub})); }
+  function emit(type,line,nodeId,narration,extra){
+    events.push(Object.assign({type,line,nodeId,narration,path:[...state],results:results.map(r=>[...r]),frames:snap()},extra||{}));
+  }
+  function backtrack(start, myId){
+    const fr={main:`backtrack(start=${start})`,sub:`state=[${state}], need ${k}`}; frames.push(fr);
+    nodes[myId].plab='['+state.join(',')+']';
+    emit('ENTER',1,myId,`Enter <b>backtrack(start=${start})</b>. state=[${state}] (size ${state.length}/${k}).`);
+    if(state.length===k){
+      results.push([...state]);
+      emit('RECORD',3,myId,`<b>is_complete?</b> len(state)==k (${k}) → record <b>[${state}]</b>. ✓`);
+      frames.pop(); emit('RETURN',4,myId,`Return (solution complete).`); return;
+    }
+    for(let i=start;i<=n;i++){
+      fr.sub=`choices: i=${i} ∈ [${start}..${n}]`;
+      emit('LOOP',5,myId,`Available choice: <b>i=${i}</b>.`);
+      state.push(i);
+      const c=node(myId,`+${i}`,'inc'); nodes[c].plab='['+state.join(',')+']';
+      emit('APPEND',6,myId,`<b>1. CHOOSE</b> ${i}. state=[${state}].`,{chose:i});
+      emit('RECURSE',7,c,`<b>2. EXPLORE</b> → backtrack(start=${i+1}) (i+1 ⇒ no reuse).`);
+      backtrack(i+1, c);
+      const popped=state.pop();
+      emit('POP',8,myId,`<b>3. UNCHOOSE</b>: pop ${popped}. state=[${state}].`,{popped});
+    }
+    frames.pop(); emit('RETURN',1,myId,`All choices tried → return.`);
+  }
+  backtrack(1, root);
+  return {events,nodes,root,res:results};
+}
+
+/* --- Combination Sum — universal template; reuse allowed, break-prune --- */
+function traceCombinationSum(inp){
+  const nums=[...inp.nums].sort((a,b)=>a-b), target=inp.target;
+  const {nodes,node}=makeTB();
+  const events=[], results=[], state=[], frames=[];
+  const root=node(null,null,'root'); nodes[root].plab='[ ]';
+  function snap(){ return frames.map(f=>({main:f.main,sub:f.sub})); }
+  function emit(type,line,nodeId,narration,extra){
+    events.push(Object.assign({type,line,nodeId,narration,path:[...state],results:results.map(r=>[...r]),frames:snap()},extra||{}));
+  }
+  function backtrack(start, total, myId){
+    const fr={main:`backtrack(start=${start}, total=${total})`,sub:`state=[${state}]`}; frames.push(fr);
+    nodes[myId].plab='['+state.join(',')+']';
+    emit('ENTER',1,myId,`Enter <b>backtrack(start=${start}, total=${total})</b>. state=[${state}].`);
+    if(total===target){
+      results.push([...state]);
+      emit('RECORD',3,myId,`<b>is_complete?</b> total==target (${target}) → record <b>[${state}]</b>. ✓`);
+      frames.pop(); emit('RETURN',4,myId,`Return (solution complete).`); return;
+    }
+    for(let i=start;i<nums.length;i++){
+      fr.sub=`choices: i=${i} ∈ [${start}..${nums.length-1}] → nums[${i}]=${nums[i]}`;
+      emit('LOOP',5,myId,`Available choice: nums[<b>i=${i}</b>]=${nums[i]}.`);
+      if(total+nums[i]>target){
+        const pn=node(myId,`✗ ${nums[i]}`,'prune'); nodes[pn].plab=`>${target}`;
+        emit('PRUNE',7,pn,`<b>PRUNE</b>: total+nums[${i}] = ${total}+${nums[i]} = ${total+nums[i]} &gt; ${target}. Sorted ⇒ all later are bigger → <b>break</b>. ✂️`,{reason:'break'});
+        break;
+      }
+      state.push(nums[i]);
+      const c=node(myId,`+${nums[i]}`,'inc'); nodes[c].plab='['+state.join(',')+']';
+      emit('APPEND',8,myId,`<b>1. CHOOSE</b> ${nums[i]}. state=[${state}], total→${total+nums[i]}.`,{chose:nums[i]});
+      emit('RECURSE',9,c,`<b>2. EXPLORE</b> → backtrack(start=<b>${i}</b>, total=${total+nums[i]}) — start stays ${i}, so ${nums[i]} <b>can be reused</b>.`);
+      backtrack(i, total+nums[i], c);
+      const popped=state.pop();
+      emit('POP',10,myId,`<b>3. UNCHOOSE</b>: pop ${popped}. state=[${state}].`,{popped});
+    }
+    frames.pop(); emit('RETURN',1,myId,`All choices tried → return.`);
+  }
+  backtrack(0,0,root);
+  return {events,nodes,root,res:results};
+}
+
+/* --- Combination Sum II — universal template; no reuse, dup-skip + break --- */
+function traceCombinationSum2(inp){
+  const nums=[...inp.nums].sort((a,b)=>a-b), target=inp.target;
+  const {nodes,node}=makeTB();
+  const events=[], results=[], state=[], frames=[];
+  const root=node(null,null,'root'); nodes[root].plab='[ ]';
+  function snap(){ return frames.map(f=>({main:f.main,sub:f.sub})); }
+  function emit(type,line,nodeId,narration,extra){
+    events.push(Object.assign({type,line,nodeId,narration,path:[...state],results:results.map(r=>[...r]),frames:snap()},extra||{}));
+  }
+  function backtrack(start, total, myId){
+    const fr={main:`backtrack(start=${start}, total=${total})`,sub:`state=[${state}]`}; frames.push(fr);
+    nodes[myId].plab='['+state.join(',')+']';
+    emit('ENTER',1,myId,`Enter <b>backtrack(start=${start}, total=${total})</b>. state=[${state}].`);
+    if(total===target){
+      results.push([...state]);
+      emit('RECORD',3,myId,`<b>is_complete?</b> total==target (${target}) → record <b>[${state}]</b>. ✓`);
+      frames.pop(); emit('RETURN',4,myId,`Return (solution complete).`); return;
+    }
+    for(let i=start;i<nums.length;i++){
+      fr.sub=`choices: i=${i} ∈ [${start}..${nums.length-1}] → nums[${i}]=${nums[i]}`;
+      emit('LOOP',5,myId,`Available choice: nums[<b>i=${i}</b>]=${nums[i]}.`);
+      if(i>start && nums[i]===nums[i-1]){
+        const pn=node(myId,`↻ ${nums[i]}`,'prune'); nodes[pn].plab='dup';
+        emit('PRUNE',7,pn,`<b>PRUNE (duplicate)</b>: i&gt;start and nums[${i}]==nums[${i-1}]=${nums[i]} → same value already tried at this depth; <b>continue</b> to skip the duplicate combo. ✂️`,{reason:'continue'});
+        continue;
+      }
+      if(total+nums[i]>target){
+        const pn=node(myId,`✗ ${nums[i]}`,'prune'); nodes[pn].plab=`>${target}`;
+        emit('PRUNE',9,pn,`<b>PRUNE</b>: total+nums[${i}] = ${total}+${nums[i]} = ${total+nums[i]} &gt; ${target}. Sorted ⇒ <b>break</b>. ✂️`,{reason:'break'});
+        break;
+      }
+      state.push(nums[i]);
+      const c=node(myId,`+${nums[i]}`,'inc'); nodes[c].plab='['+state.join(',')+']';
+      emit('APPEND',10,myId,`<b>1. CHOOSE</b> ${nums[i]}. state=[${state}], total→${total+nums[i]}.`,{chose:nums[i]});
+      emit('RECURSE',11,c,`<b>2. EXPLORE</b> → backtrack(start=<b>${i+1}</b>, total=${total+nums[i]}) — i+1, so <b>no reuse</b>.`);
+      backtrack(i+1, total+nums[i], c);
+      const popped=state.pop();
+      emit('POP',12,myId,`<b>3. UNCHOOSE</b>: pop ${popped}. state=[${state}].`,{popped});
+    }
+    frames.pop(); emit('RETURN',1,myId,`All choices tried → return.`);
+  }
+  backtrack(0,0,root);
+  return {events,nodes,root,res:results};
+}
+
+/* --- Palindrome Partitioning — the SAME template on a string.
+       The choice is not "which element" but "where do I cut".
+       state = the pieces committed so far; start = "everything before
+       me is already cut into palindromes, solve the rest". --- */
+function tracePalindrome(inp){
+  const s = (inp.s && inp.s.length) ? inp.s : 'a';
+  const {nodes,node}=makeTB();
+  const events=[], results=[], state=[], frames=[];
+  const root=node(null,null,'root'); nodes[root].plab='[ ]';
+  let view={start:0,end:null,verdict:null};
+  const q = x => `"${x}"`;
+  const rev = x => [...x].reverse().join('');
+  let palTests = 0;   // how much work THIS run actually does
+  const isPal = t => { palTests++; for(let a=0,b=t.length-1;a<b;a++,b--) if(t[a]!==t[b]) return false; return true; };
+  const shown = () => state.map(q).join(', ');
+
+  function snap(){ return frames.map(f=>({main:f.main,sub:f.sub})); }
+  function emit(type,line,nodeId,narration,extra){
+    events.push(Object.assign({type,line,nodeId,narration,
+      path:state.map(q), results:results.map(r=>[...r]), frames:snap(),
+      str:s, pieces:[...state], sstart:view.start, send:view.end, verdict:view.verdict},extra||{}));
+  }
+
+  function backtrack(start, myId){
+    view={start,end:null,verdict:null};
+    const fr={main:`backtrack(start=${start})`,
+              sub:`state=[${shown()}] · left to cut: "${s.slice(start)||'∅'}"`};
+    frames.push(fr);
+    nodes[myId].plab = state.length? state.join('|') : '[ ]';
+    emit('ENTER',1,myId,`Enter <b>backtrack(start=${start})</b>. Everything before index ${start} is already cut into palindromes; what's left to solve is "<b>${s.slice(start)||'(nothing)'}</b>".`);
+
+    if(start===s.length){
+      results.push(state.map(q));
+      emit('RECORD',3,myId,`<b>① is_complete?</b> start == len(s) == ${s.length} → the string is used up. Every piece already passed the palindrome test on the way in, so no final check is needed → record <b>[${shown()}]</b>. ✓`);
+      frames.pop();
+      emit('RETURN',4,myId,`Return — this partition is finished.`);
+      return;
+    }
+
+    for(let end=start;end<s.length;end++){
+      const piece=s.slice(start,end+1);
+      view={start,end,verdict:null};
+      fr.sub=`trying cut after index ${end} → piece ${q(piece)}`;
+      emit('LOOP',5,myId,`<b>② Choice:</b> put the cut after index <b>${end}</b>. <i>The loop slides the cut one character further each time — from start=${start} the candidates are ${Array.from({length:s.length-start},(_,d)=>q(s.slice(start,start+d+1))).join(', ')}.</i>`);
+      emit('SLICE',6,myId,`piece = s[${start}:${end}+1] = <b>${q(piece)}</b>. <i>(Python slices are end-exclusive — that's the only reason for the +1.)</i>`);
+
+      const ok=isPal(piece);
+      view={start,end,verdict:ok?'ok':'bad'};
+      if(!ok){
+        const pn=node(myId,`✗${q(piece)}`,'prune'); nodes[pn].plab='not pal';
+        emit('PRUNE',8,pn,`<b>③ PRUNE</b>: ${q(piece)} reversed is ${q(rev(piece))} → <b>not a palindrome</b>. It can never be part of any answer, so don't recurse — <code>continue</code> and try a <i>longer</i> piece. <i>(continue, not break: "ab" fails but "aba" could still pass.)</i> ✂️`,{reason:'continue'});
+        continue;
+      }
+      emit('CHECK',14,myId,`${q(piece)} reversed is ${q(rev(piece))} → they match, so it <b>is a palindrome</b> ✓. This cut is legal.`);
+
+      state.push(piece);
+      view={start:end+1,end:null,verdict:null};   // the piece is now committed — it goes green, ✂ lands after it
+      const c=node(myId,q(piece),'inc'); nodes[c].plab=state.join('|');
+      emit('APPEND',9,myId,`<b>1. CHOOSE</b>: commit the piece ${q(piece)} — the cut after index ${end} is now real. state=[${shown()}].`,{chose:q(piece)});
+      emit('RECURSE',10,c,`<b>2. EXPLORE</b> → backtrack(start=<b>${end+1}</b>) — carry on from right after the piece. The leftover "${s.slice(end+1)||'(nothing)'}" is the same problem, smaller.`);
+      backtrack(end+1, c);
+
+      const popped=state.pop();
+      view={start,end,verdict:'undo'};            // cut removed — the piece is a mere candidate again
+      emit('POP',11,myId,`<b>3. UNCHOOSE</b>: pop ${q(popped)} — undo that cut so the loop can try a <i>longer</i> piece starting at index ${start}. state=[${shown()}].`,{popped:q(popped)});
+    }
+
+    frames.pop();
+    view={start,end:null,verdict:null};
+    emit('RETURN',1,myId,`Every cut position from index ${start} has been tried → return to the caller.`);
+  }
+
+  backtrack(0, root);
+
+  /* --- what would BRUTE FORCE have cost? -------------------------------
+     Build all 2^(n-1) partitions (one bit per gap = cut / don't cut), then
+     test each one's pieces. `.every()` short-circuits on the first failure,
+     so this is the *generous* version of brute force — and it still loses. */
+  const naive = (function(){
+    let tests=0, parts=0;
+    const pal = t => { tests++; for(let a=0,b=t.length-1;a<b;a++,b--) if(t[a]!==t[b]) return false; return true; };
+    const gaps = Math.max(0, s.length-1);
+    for(let mask=0; mask<(1<<gaps); mask++){
+      const pieces=[]; let last=0;
+      for(let g=0; g<gaps; g++) if(mask&(1<<g)){ pieces.push(s.slice(last,g+1)); last=g+1; }
+      pieces.push(s.slice(last));
+      parts++; pieces.every(pal);
+    }
+    return {tests,parts};
+  })();
+
+  const prunes = Object.keys(nodes).filter(id=>nodes[id].kind==='prune').length;
+  return {events,nodes,root,res:results,
+          stats:{n:s.length, parts:naive.parts, naiveTests:naive.tests, btTests:palTests,
+                 prunes, answers:results.length}};
+}
+
+/* ---------- string renderer (Palindrome Partitioning) ---------- */
+function renderStr(el,e){
+  if(!e || e.str==null){ el.innerHTML=''; return; }
+  const s=e.str, st=e.sstart, en=e.send, v=e.verdict, pieces=e.pieces||[];
+  const bounds=new Set(); let acc=0;
+  pieces.forEach(p=>{ acc+=p.length; bounds.add(acc); });
+
+  let row='';
+  for(let i=0;i<s.length;i++){
+    let cls='sch';
+    if(i<st) cls+=' done';
+    else if(en!=null && i>=st && i<=en) cls+= (v==='bad'?' bad':' cand');
+    else cls+=' rest';
+    row+=`<span class="${cls}"><span class="sidx">${i}</span>${s[i]}</span>`;
+    if(i+1<s.length){
+      if(bounds.has(i+1)) row+=`<span class="cut"></span>`;
+      else if(en!=null && i===en) row+=`<span class="cut pending"></span>`;
+    }
+  }
+
+  const piece = en!=null? s.slice(st,en+1) : null;
+  const r = piece!=null? [...piece].reverse().join('') : null;
+  const verdictTxt = v==='ok'   ? `<span class="pyes">palindrome ✓</span>`
+                   : v==='bad'  ? `<span class="pno">not a palindrome ✗</span>`
+                   : v==='undo' ? `<span style="color:var(--gold)">un-chosen — a candidate again</span>`
+                   : `<span style="opacity:.6">checking…</span>`;
+
+  const side =
+    `<div class="strside">`+
+      `<div>committed: <b>${pieces.length? pieces.map(p=>'"'+p+'"').join(' | ') : '(none yet)'}</b></div>`+
+      `<div>start = <b>${st}</b> → left: <b>"${s.slice(st)||'∅'}"</b></div>`+
+      (piece!=null
+        ? `<div class="revrow">piece = s[${st}:${en}+1] = <b>"${piece}"</b><br>`+
+          `reversed &nbsp;= <b>"${r}"</b><br>${verdictTxt}</div>`
+        : `<div class="revrow" style="opacity:.6">no piece under test<br>(between choices)</div>`)+
+    `</div>`;
+
+  el.innerHTML = `<div class="strwrap"><div class="strrow">${row}</div>${side}</div>`;
+}
+
+/* --- Word Search — the SAME template on a grid.
+       "state" = the path of cells; the board itself is the visited-set:
+       mark '#' before recursing (CHOOSE), restore after (UNCHOOSE). --- */
+const WS_CAP = {};   // sentinel thrown to abort a runaway trace
+function traceWordSearch(inp){
+  const rowsIn=(inp.board||[]).filter(s=>s.length);
+  const src = rowsIn.length? rowsIn : ['A'];
+  const COLS=Math.max(...src.map(r=>r.length));
+  const board=src.map(r=>{const a=r.toUpperCase().split(''); while(a.length<COLS) a.push('.'); return a;});
+  const ROWS=board.length;
+  const word=(inp.word||'A').toUpperCase();
+  const MAX=1500;
+
+  const {nodes,node}=makeTB();
+  const events=[], results=[], path=[], frames=[];
+  const root=node(null,null,'root'); nodes[root].plab='for';
+  const DIRS=[[1,0,'↓','r + 1, c'],[-1,0,'↑','r - 1, c'],[0,1,'→','r, c + 1'],[0,-1,'←','r, c - 1']];
+
+  function snap(){ return frames.map(f=>({main:f.main,sub:f.sub})); }
+  function snapBoard(){ return board.map(r=>r.join('')); }
+  function emit(type,line,nodeId,narration,extra){
+    events.push(Object.assign({type,line,nodeId,narration,path:[...path],
+      results:results.map(r=>[...r]),frames:snap(),board:snapBoard(),word,cur:null,wi:null},extra||{}));
+    if(events.length>=MAX) throw WS_CAP;
+  }
+  const inB=(r,c)=>r>=0&&c>=0&&r<ROWS&&c<COLS;
+  const cellLab=(r,c)=>inB(r,c)?`${board[r][c]}${r}${c}`:'∅';
+
+  function dfs(r,c,i,myId){
+    const ok=inB(r,c), ch=ok?board[r][c]:null;
+    const fr={main:`dfs(r=${r}, c=${c}, i=${i})`,
+              sub:i<word.length?`want word[${i}]='${word[i]}'`:`i == len(word)`};
+    frames.push(fr);
+    emit('ENTER',1,myId,`Enter <b>dfs(${r}, ${c}, ${i})</b>${ok?` — that cell holds '<b>${ch}</b>'`:` — that cell is <b>off the board</b>`}.`,{cur:{r,c},wi:i});
+
+    if(i===word.length){
+      results.push([...path]);
+      emit('RECORD',3,myId,`<b>① is_complete?</b> i == len(word) == ${word.length} → every letter is already matched → <b>return True</b>. ✓`+
+        (ok?'':` <i>(This call is off the board — but the length check runs <b>first</b>, so it never touches board[r][c].)</i>`),{cur:{r,c},wi:i});
+      frames.pop();
+      return true;
+    }
+
+    let reason=null, pline=5;
+    if(!ok){ reason=`r=${r}, c=${c} is <b>off the board</b> (${ROWS}×${COLS}) — the bounds test comes first so board[r][c] is never indexed`; pline=4; }
+    else if(ch==='#') reason=`board[${r}][${c}] is <b>'#'</b> — that cell is already used by the current path (no reusing a cell in one word)`;
+    else if(ch!==word[i]) reason=`board[${r}][${c}]='${ch}' <b>≠</b> word[${i}]='${word[i]}'`;
+    if(reason!=null){
+      nodes[myId].kind='prune';
+      emit('PRUNE',pline,myId,`<b>③ PRUNE</b>: ${reason} → <b>return False</b>. ✂️`,{cur:{r,c},wi:i});
+      frames.pop();
+      return false;
+    }
+
+    board[r][c]='#';
+    path.push(`${ch}(${r},${c})`);
+    emit('APPEND',8,myId,`<b>1. CHOOSE</b>: '${ch}' matches word[${i}] → set board[${r}][${c}] = '#'. <i>The board IS the visited-set — no extra <code>seen</code> structure.</i>`,{cur:{r,c},wi:i,chose:ch});
+
+    let res=false;
+    for(let d=0;d<4;d++){
+      const [dr,dc,arrow,argtxt]=DIRS[d];
+      const nr=r+dr, nc=c+dc, line=9+d;
+      const child=node(myId,arrow,'inc'); nodes[child].plab=cellLab(nr,nc);
+      emit('RECURSE',line,child,`<b>2. EXPLORE</b> ${arrow} → dfs(${argtxt}, i + 1) = dfs(${nr}, ${nc}, ${i+1}). <i>② The 4 neighbours are this problem's "for loop" over choices.</i>`,{cur:{r,c},wi:i});
+      if(dfs(nr,nc,i+1,child)){
+        res=true;
+        emit('SHORTCIRCUIT',line,myId,`${arrow} returned <b>True</b> → the <code>or</code> chain <b>short-circuits</b>: the remaining directions are never called.`,{cur:{r,c},wi:i});
+        break;
+      }
+    }
+
+    board[r][c]=word[i];
+    const popped=path.pop();
+    emit('POP',13,myId,`<b>3. UNCHOOSE</b>: restore board[${r}][${c}] = '${word[i]}' so <i>other</i> paths may still use this cell. This runs even when res is True.`,{cur:{r,c},wi:i,popped});
+    frames.pop();
+    emit('RETURN',14,myId,`<b>return res = ${res}</b> from dfs(${r}, ${c}, ${i}).`,{cur:{r,c},wi:i});
+    return res;
+  }
+
+  let found=false;
+  try{
+    outer:
+    for(let r=0;r<ROWS;r++){
+      for(let c=0;c<COLS;c++){
+        const st=node(root,`(${r},${c})`,'inc'); nodes[st].plab=cellLab(r,c);
+        emit('RECURSE',18,st,`Outer loop: try starting the word at cell (<b>${r},${c}</b>)='${board[r][c]}' → dfs(${r}, ${c}, 0). <i>Any cell can be the first letter, so every cell gets a try.</i>`,{cur:{r,c},wi:0});
+        if(dfs(r,c,0,st)){
+          found=true;
+          emit('FOUND',18,st,`dfs returned True → <b>return True</b>. "<b>${word}</b>" is on the board. 🎉`,{cur:{r,c},wi:word.length});
+          break outer;
+        }
+      }
+    }
+    if(!found) emit('NOTFOUND',19,root,`Every start cell failed → <b>return False</b>. "${word}" is not on this board.`,{});
+  }catch(err){
+    if(err!==WS_CAP) throw err;
+    const last=events[events.length-1];
+    events.push(Object.assign({},last,{type:'TRUNCATED',
+      narration:`⚠️ Trace stopped at ${MAX} steps so the page stays usable — try a smaller board or a shorter word.`}));
+  }
+  return {events,nodes,root,res:results};
+}
+
+/* ---------- board renderer (grid problems) ---------- */
+function renderBoard(el,e){
+  if(!e || !e.board){ el.innerHTML=''; return; }
+  const rows=e.board, C=rows[0].length, cur=e.cur, fail=(e.type==='PRUNE');
+  let cells='';
+  rows.forEach((row,r)=>{
+    row.split('').forEach((ch,c)=>{
+      let cls='cell';
+      if(ch==='#') cls+=' used';
+      if(cur && cur.r===r && cur.c===c) cls+= fail?' fail':' cur';
+      cells+=`<div class="${cls}"><span class="idx">${r},${c}</span>${ch}</div>`;
+    });
+  });
+  const w=e.word||'', wi=e.wi;
+  let strip='';
+  for(let i=0;i<w.length;i++){
+    let c='wch';
+    if(wi!=null && i<wi) c+=' done'; else if(wi!=null && i===wi) c+=' want';
+    strip+=`<span class="${c}">${w[i]}</span>`;
+  }
+  const oob = cur && !(cur.r>=0&&cur.c>=0&&cur.r<rows.length&&cur.c<C);
+  const note =
+    `<div class="bnote">`+
+    (cur?`at <b>(${cur.r},${cur.c})</b>${oob?' <span class="oob">— off the board</span>':''}<br>`:'')+
+    (wi!=null? (wi<w.length? `i = <b>${wi}</b> → need '<b>${w[wi]}</b>'` : `i = <b>${wi}</b> = len(word) ✓`) : '')+
+    `</div>`;
+  el.innerHTML =
+    `<div class="boardwrap">`+
+      `<div class="board" style="grid-template-columns:repeat(${C},46px)">${cells}</div>`+
+      `<div class="boardside"><div class="wordstrip">${strip}</div>${note}</div>`+
+    `</div>`;
+}
+
+/* ============================================================
+   CODE LISTINGS (line indices must match the tracer `line`s)
+   ============================================================ */
+const CODE = {
+  subsets:[
+"# Subsets — every partial state is already a solution",
+"def backtrack(start, state):",
+"    results.append(state[:])            # is_complete: always -> record",
+"    for i in range(start, len(nums)):   # available choices",
+"        state.append(nums[i])           # 1. CHOOSE",
+"        backtrack(i + 1, state)         # 2. EXPLORE",
+"        state.pop()                     # 3. UNCHOOSE",
+  ],
+  combinationsBinary:[
+"def combinations(n, k):",
+"    combs = []",
+"    helper(1, [], combs, n, k)",
+"    return combs",
+"",
+"def helper(i, curComb, combs, n, k):",
+"    if len(curComb) == k:",
+"        combs.append(curComb.copy())",
+"        return",
+"    if i > n:",
+"        return",
+"    curComb.append(i)            # include i",
+"    helper(i + 1, curComb, combs, n, k)",
+"    curComb.pop()                # un-choose",
+"    helper(i + 1, curComb, combs, n, k)  # exclude i",
+  ],
+  combinations:[
+"# Combinations — complete when we've chosen k numbers",
+"def backtrack(start, state):",
+"    if len(state) == k:                 # is_complete?",
+"        results.append(state[:])",
+"        return",
+"    for i in range(start, n + 1):       # available choices",
+"        state.append(i)                 # 1. CHOOSE",
+"        backtrack(i + 1, state)         # 2. EXPLORE  (i+1: no reuse)",
+"        state.pop()                     # 3. UNCHOOSE",
+  ],
+  combinationSum:[
+"# Combination Sum — nums sorted; a number may be reused",
+"def backtrack(start, state, total):",
+"    if total == target:                 # is_complete?",
+"        results.append(state[:])",
+"        return",
+"    for i in range(start, len(nums)):   # available choices",
+"        if total + nums[i] > target:    # PRUNE (sorted)",
+"            break",
+"        state.append(nums[i])           # 1. CHOOSE",
+"        backtrack(i, state, total + nums[i])    # 2. EXPLORE  (i: reuse)",
+"        state.pop()                     # 3. UNCHOOSE",
+  ],
+  combinationSum2:[
+"# Combination Sum II — nums sorted; each used once; no dup combos",
+"def backtrack(start, state, total):",
+"    if total == target:                 # is_complete?",
+"        results.append(state[:])",
+"        return",
+"    for i in range(start, len(nums)):   # available choices",
+"        if i > start and nums[i] == nums[i-1]:  # skip duplicate",
+"            continue",
+"        if total + nums[i] > target:    # PRUNE (sorted)",
+"            break",
+"        state.append(nums[i])           # 1. CHOOSE",
+"        backtrack(i + 1, state, total + nums[i])  # 2. EXPLORE (i+1: no reuse)",
+"        state.pop()                     # 3. UNCHOOSE",
+  ],
+  palindrome:[
+"# Palindrome Partitioning (LC 131) — choose where to CUT",
+"def backtrack(start, state):",
+"    if start == len(s):               # ① is_complete? string used up",
+"        results.append(state[:])",
+"        return",
+"    for end in range(start, len(s)):  # ② choices: where does the cut go",
+"        piece = s[start:end + 1]      #    (+1 because slices exclude the end)",
+"        if not is_pal(piece):         # ③ PRUNE: piece must be a palindrome",
+"            continue                  #    try a LONGER piece instead",
+"        state.append(piece)           # 1. CHOOSE",
+"        backtrack(end + 1, state)     # 2. EXPLORE  (④ start = end+1, no reuse)",
+"        state.pop()                   # 3. UNCHOOSE",
+"",
+"def is_pal(t):",
+"    return t == t[::-1]               # t[::-1] is just 't reversed'",
+  ],
+  wordSearch:[
+"# Word Search (LC 79) — same template, on a grid",
+"def dfs(r, c, i):",
+"    if i == len(word):        # is_complete?",
+"        return True",
+"    if (r < 0 or c < 0 or r >= ROWS or c >= COLS or",
+"            word[i] != board[r][c] or board[r][c] == '#'):",
+"        return False          # PRUNE: dead end",
+"",
+"    board[r][c] = '#'         # 1. CHOOSE (lock cell)",
+"    res = (dfs(r + 1, c, i + 1) or   # 2. EXPLORE  down",
+"           dfs(r - 1, c, i + 1) or   #             up",
+"           dfs(r, c + 1, i + 1) or   #             right",
+"           dfs(r, c - 1, i + 1))     #             left",
+"    board[r][c] = word[i]     # 3. UNCHOOSE (restore)",
+"    return res",
+"",
+"for r in range(ROWS):         # every cell = candidate start",
+"    for c in range(COLS):",
+"        if dfs(r, c, 0): return True",
+"return False",
+  ],
+};
+
+/* ============================================================
+   EXAMPLES registry
+   ============================================================ */
+const EXAMPLES = {
+  subsets:{
+    title:'Subsets',
+    code:CODE.subsets, tracer:traceSubsets,
+    inputs:{nums:[1,2,3]},
+    inputUI:[{key:'nums',label:'nums',type:'arr',def:'1,2,3'}],
+    knobs:{complete:'always — every state is a subset', choices:'range(start, len(nums))', prune:'none', reuse:'no  ·  next start = i+1'},
+  },
+  combinations:{
+    title:'Combinations (n,k)',
+    code:CODE.combinations, tracer:traceCombinations,
+    inputs:{n:4,k:2},
+    inputUI:[{key:'n',label:'n',type:'num',def:4},{key:'k',label:'k',type:'num',def:2}],
+    knobs:{complete:'len(state) == k', choices:'range(start, n+1)', prune:'none', reuse:'no  ·  next start = i+1'},
+  },
+  combinationSum:{
+    title:'Combination Sum',
+    code:CODE.combinationSum, tracer:traceCombinationSum,
+    inputs:{nums:[2,3,6,7],target:7},
+    inputUI:[{key:'nums',label:'nums',type:'arr',def:'2,3,6,7'},{key:'target',label:'target',type:'num',def:7}],
+    knobs:{complete:'total == target', choices:'range(start, len)  ·  sorted', prune:'break if total+nums[i] > target', reuse:'YES  ·  next start = i'},
+  },
+  combinationSum2:{
+    title:'Combination Sum II',
+    code:CODE.combinationSum2, tracer:traceCombinationSum2,
+    inputs:{nums:[1,1,2,3],target:4},
+    inputUI:[{key:'nums',label:'candidates',type:'arr',def:'1,1,2,3'},{key:'target',label:'target',type:'num',def:4}],
+    knobs:{complete:'total == target', choices:'range(start, len)  ·  sorted', prune:'skip dup (continue) + break', reuse:'no  ·  next start = i+1'},
+  },
+  palindrome:{
+    title:'Palindrome Partitioning',
+    code:CODE.palindrome, tracer:tracePalindrome, str:true,
+    inputs:{s:'aab'},
+    inputUI:[{key:'s',label:'s (max 8 chars)',type:'str',def:'aab'}],
+    knobs:{complete:'start == len(s)  →  string used up',
+           choices:'for end in range(start, len(s))  ·  where to cut',
+           prune:'continue if s[start:end+1] not a palindrome',
+           reuse:'no  ·  next start = end + 1'},
+    explain:
+      '<p><b>Why this one feels different from every other tab:</b> the choice isn\'t an <i>element</i>, it\'s a <i>position</i>.</p>'+
+      '<pre>  Subsets    →  choice = "do I take nums[i]?"\n'+
+      '  Partition  →  choice = <span class="cx">"where do I put the cut?"</span>\n\n'+
+      '  The characters are fixed. You never pick, skip or reorder\n'+
+      '  them — you only decide where the scissors go.</pre>'+
+      '<p>A string of length n has n−1 gaps, and each gap is cut or not cut — so the search space is <b>2<sup>n−1</sup></b>, the exact same shape as the Subsets tab:</p>'+
+      '<pre>     a   a   b\n'+
+      '       <span class="cx">↑</span>   <span class="cx">↑</span>        2 gaps  →  2² = 4 ways to cut\n\n'+
+      '  a | a | b     <span class="ok">✓ keep</span>    every piece is a palindrome\n'+
+      '  aa  | b       <span class="ok">✓ keep</span>    "aa" is a palindrome\n'+
+      '  a | ab        <span class="no">✗ cut</span>     "ab" reversed is "ba"\n'+
+      '  aab           <span class="no">✗ cut</span>     "aab" reversed is "baa"</pre>'+
+      '<p><b>So the palindrome test is nothing more than the ③ PRUNE knob.</b> Backtracking walks those 4 candidates without building them all first, abandoning a branch the moment a piece fails the test.</p>'+
+      '<p><b>What to watch while you step:</b> <span style="color:var(--inc)">green</span> = pieces already committed (✂ marks each real cut) · <span style="color:var(--gold)">gold</span> = the piece under test right now · dim = not reached yet. '+
+      'The moment to watch for is after <code>["a","a","b"]</code> is recorded: the POPs walk you all the way back to <code>start=0</code>, and the loop tries the <b>longer</b> piece <code>"aa"</code>. That un-choosing is the whole algorithm.</p>'+
+
+      '<h5>"So isn\'t this just brute force with extra steps?"</h5>'+
+      '<p>No — and the <b>cost bar above</b> counts it for real, on whatever string you type. Brute force means: build all 2<sup>n−1</sup> partitions, then test each one. Backtracking beats it in <b>two separate ways</b>, and most explanations only mention the first.</p>'+
+      '<p><b>① Pruning.</b> When <code>"ab"</code> fails the test, you don\'t reject <i>one</i> candidate — you kill <b>every</b> partition that would have started <code>"a" | "ab…"</code>. One failed test murders a whole subtree. Those are the <span class="no">red nodes</span> in the tree.</p>'+
+      '<p><b>② Prefix sharing.</b> Brute force rebuilds each partition from scratch, re-testing <code>"a"</code>, <code>"aa"</code>, … over and over. Backtracking builds <code>"a"|"a"</code> <i>once</i> and explores everything underneath it before undoing it. <b>The recursion stack itself is the shared work.</b></p>'+
+      '<p>Click both and watch the bar swing — same code, same algorithm, opposite reasons for the saving:</p>'+
+      '<p><button class="tryb" data-try="abcdefgh">try "abcdefgh"</button>'+
+      '<button class="tryb" data-try="aaaaaaaa">try "aaaaaaaa"</button></p>'+
+      '<pre>  <span class="no">abcdefgh</span>  nothing is a palindrome, so almost every branch\n'+
+      '            dies on its first test — tiny tree, red everywhere.\n'+
+      '            255 tests → 36.  That is <span class="cx">①</span> doing the work.\n\n'+
+      '  <span class="ok">aaaaaaaa</span>  every piece is a palindrome, so <b>nothing ever prunes</b>\n'+
+      '            — not one red node. Yet it still does less than\n'+
+      '            half the work. 576 → 255.  That is <span class="cx">②</span>, alone.</pre>'+
+      '<p><b>The honest caveat:</b> none of this makes the problem <i>cheap</i>. It is still exponential, and it has to be — <code>"aaaaaaaa"</code> has <b>128 valid answers</b>, so no algorithm can beat exponential when the <i>output</i> itself is exponential. Backtracking prunes the search; it does not change the complexity class.</p>',
+  },
+  wordSearch:{
+    title:'Word Search (grid)',
+    code:CODE.wordSearch, tracer:traceWordSearch, grid:true,
+    inputs:{board:['ABCE','SFCS','ADEE'],word:'ABCCED'},
+    inputUI:[{key:'board',label:'board (rows split by /)',type:'grid',def:'ABCE/SFCS/ADEE'},
+             {key:'word',label:'word',type:'str',def:'ABCCED'}],
+    knobs:{complete:'i == len(word) → return True', choices:'the 4 neighbours ↓ ↑ → ←',
+           prune:'off-board · letter ≠ word[i] · cell is #', reuse:"no  ·  mark '#', then restore"},
+  },
+  recIter:{ title:'Recursion × Iteration', dual:true },
+};
+
+/* ============================================================
+   UI wiring
+   ============================================================ */
+const $ = s=>document.querySelector(s);
+const refs = {
+  code:$('#codePanel'), tree:$('#treeSvg'), stack:$('#stackPanel'),
+  path:$('#pathPanel'), action:$('#actionPanel'), res:$('#resPanel'),
+  narration:$('#narration'), stepc:$('#stepc'), board:$('#boardPanel'), str:$('#strPanel'),
+  btnPrev:$('#btnPrev'), btnNext:$('#btnNext'),
+};
+const stepper = new Stepper(refs);
+let currentKey='subsets', currentVariant='binary', playTimer=null;
+
+// build tabs
+const tabs=$('#tabs');
+Object.keys(EXAMPLES).forEach(key=>{
+  const b=document.createElement('div'); b.className='tab'; b.textContent=EXAMPLES[key].title; b.dataset.key=key;
+  b.onclick=()=>selectTab(key); tabs.appendChild(b);
+});
+
+function selectTab(key){
+  currentKey=key; stopPlay();
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.key===key));
+  const ex=EXAMPLES[key];
+  if(ex.dual){ $('#singleView').classList.add('hidden-block'); $('#dualView').classList.remove('hidden-block'); loadDual(); return; }
+  $('#dualView').classList.add('hidden-block'); $('#singleView').classList.remove('hidden-block');
+  $('#boardWrap').classList.toggle('hidden-block', !ex.grid);
+  $('#strWrap').classList.toggle('hidden-block', !ex.str);
+  renderExplain(ex.explain);
+  buildInputUI(ex);
+  $('#variantArea').classList.toggle('hidden-block', !ex.variant);
+  loadCurrent();
+}
+
+/* "cost of this run" — brute force vs backtracking, for the CURRENT input */
+function renderCost(st){
+  const el=$('#costPanel'); if(!el) return;
+  if(!st){ el.innerHTML=''; return; }
+  const mx=Math.max(st.naiveTests, st.btTests)||1;
+  const saved=st.naiveTests? Math.round((1-st.btTests/st.naiveTests)*100) : 0;
+  const bar=(label,cls,val,txt)=>
+    `<div class="crow"><span class="cl">${label}</span>`+
+    `<span class="cbar"><i class="${cls}" style="width:${Math.max(2,Math.round(val/mx*100))}%"></i></span>`+
+    `<span class="cv">${txt}</span></div>`;
+  el.innerHTML=
+    `<div class="cost">`+
+      `<div class="ch">cost of this run — <b>${st.n}</b>-char string · <b>${st.parts}</b> possible partitions · `+
+        `<b>${st.answers}</b> valid answer${st.answers===1?'':'s'}</div>`+
+      bar('brute force','bad',st.naiveTests,`${st.naiveTests} palindrome tests`)+
+      bar('backtracking','good',st.btTests,`${st.btTests} tests`)+
+      `<div class="cfoot">`+
+        (st.prunes
+          ? `<b class="gold">${saved}%</b> of the work skipped · <b>${st.prunes}</b> branch${st.prunes===1?'':'es'} pruned — those are the red nodes in the tree.`
+          : `<b class="gold">${saved}%</b> skipped with <b>0 branches pruned</b> — every piece here is a palindrome, so nothing ever gets cut. This saving is <i>entirely</i> prefix-sharing.`)+
+      `</div>`+
+    `</div>`;
+}
+
+/* optional per-tab explainer (only the tabs that set ex.explain get one) */
+function renderExplain(html){
+  const el=$('#explainPanel'); if(!el) return;
+  el.innerHTML = html
+    ? '<details class="explain" open><summary>Why this one feels different — open this if you\'re stuck</summary>'+
+      '<div class="explain-body">'+html+'</div></details>'
+    : '';
+}
+
+function buildInputUI(ex){
+  const area=$('#inputArea'); area.innerHTML='';
+  (ex.inputUI||[]).forEach(f=>{
+    const wrap=document.createElement('span'); wrap.className='inpgroup';
+    const lab=document.createElement('span'); lab.textContent=f.label+':';
+    const inp=document.createElement('input');
+    inp.className = f.type==='num'?'num':''; inp.value=f.def; inp.dataset.key=f.key; inp.dataset.type=f.type;
+    if(f.type==='grid') inp.style.width='150px';
+    inp.onchange=()=>loadCurrent();
+    inp.onkeydown=e=>{ if(e.key==='Enter') loadCurrent(); };
+    wrap.appendChild(lab); wrap.appendChild(inp); area.appendChild(wrap);
+  });
+}
+
+function readInputs(ex){
+  const obj={};
+  $('#inputArea').querySelectorAll('input').forEach(inp=>{
+    if(inp.dataset.type==='num'){
+      let v=parseInt(inp.value,10); if(isNaN(v)) v=0; obj[inp.dataset.key]=v;
+    } else if(inp.dataset.type==='grid'){
+      const rows=inp.value.split('/').map(s=>s.trim().replace(/\s+/g,'')).filter(s=>s.length);
+      obj[inp.dataset.key]=rows.length?rows:['A'];
+    } else if(inp.dataset.type==='str'){
+      const s=inp.value.trim().replace(/\s+/g,'');
+      obj[inp.dataset.key]=s.length?s:'A';
+    } else {
+      const arr=inp.value.split(',').map(s=>parseInt(s.trim(),10)).filter(x=>!isNaN(x));
+      obj[inp.dataset.key]=arr.length?arr:[1];
+    }
+  });
+  return obj;
+}
+
+function renderKnobs(k){
+  const kn=$('#knobsPanel'); if(!kn) return;
+  if(!k){ kn.innerHTML=''; return; }
+  kn.innerHTML=
+    `<div class="knob"><div class="kh">① is_complete?</div><div class="kv">${k.complete}</div></div>`+
+    `<div class="knob"><div class="kh">② available choices</div><div class="kv">${k.choices}</div></div>`+
+    `<div class="knob"><div class="kh">③ pruning</div><div class="kv">${k.prune}</div></div>`+
+    `<div class="knob reuse"><div class="kh">④ reuse element?</div><div class="kv">${k.reuse}</div></div>`;
+}
+
+function loadCurrent(){
+  stopPlay();
+  const ex=EXAMPLES[currentKey];
+  const inputs=readInputs(ex);
+  // clamp for sanity so trees stay legible
+  if(inputs.n!=null){ inputs.n=Math.max(1,Math.min(7,inputs.n)); }
+  if(inputs.k!=null){ inputs.k=Math.max(1,Math.min(inputs.n??7,inputs.k)); }
+  if(ex.grid){   // keep the board + word small enough to stay legible
+    inputs.board=(inputs.board||['A']).slice(0,6).map(s=>s.slice(0,6));
+    inputs.word=(inputs.word||'A').slice(0,10);
+  }
+  if(ex.str){    // 8 chars ⇒ at most 2^7 partitions, tree still walkable
+    inputs.s=(inputs.s||'a').slice(0,8);
+    // echo the clamped/cleaned string back so the box always matches what's traced
+    const sBox=$('#inputArea input[data-key="s"]');
+    if(sBox && sBox.value!==inputs.s) sBox.value=inputs.s;
+  }
+  renderKnobs(ex.knobs);
+  stepper.load({tracer:ex.tracer,code:ex.code,inputs});
+  renderCost(stepper.stats);
+}
+
+// "try this string" buttons inside the explainer (delegated — it's injected HTML)
+document.addEventListener('click', e=>{
+  const b=e.target.closest('[data-try]'); if(!b) return;
+  const box=$('#inputArea input[data-key="s"]'); if(!box) return;
+  box.value=b.dataset.try; loadCurrent();
+  $('#costPanel').scrollIntoView({block:'center',behavior:'smooth'});
+});
+
+// controls
+$('#btnPrev').onclick=()=>{ stopPlay(); stepper.prev(); };
+$('#btnNext').onclick=()=>tryNext();
+$('#btnReset').onclick=()=>{ stopPlay(); stepper.reset(); };
+$('#btnPlay').onclick=()=>togglePlay();
+$('#speed').oninput=()=>{ if(playTimer){ stopPlay(); startPlay(); } };
+
+// variant chips
+$('#chipBinary').onclick=()=>setVariant('binary');
+$('#chipLoop').onclick=()=>setVariant('loop');
+function setVariant(v){
+  currentVariant=v;
+  $('#chipBinary').classList.toggle('on',v==='binary');
+  $('#chipLoop').classList.toggle('on',v==='loop');
+  loadCurrent();
+}
+
+function tryNext(){
+  const predictOn=$('#predictToggle').checked;
+  const nt=stepper.peekNextType();
+  if(predictOn && !playTimer && ['RECURSE','POP','PRUNE','RECORD'].includes(nt)){
+    openPredict(nt);
+  } else {
+    stepper.next(true);
+  }
+}
+function togglePlay(){ playTimer?stopPlay():startPlay(); }
+function startPlay(){
+  $('#btnPlay').textContent='⏸ Pause'; $('#btnPlay').classList.add('primary');
+  const spd=+$('#speed').value;
+  playTimer=setInterval(()=>{ if(!stepper.next(true)) stopPlay(); }, spd);
+}
+function stopPlay(){ if(playTimer){ clearInterval(playTimer); playTimer=null; } $('#btnPlay').textContent='▶ Play'; }
+
+// predict overlay
+let predictExpected=null;
+function openPredict(expected){
+  predictExpected=expected;
+  document.querySelectorAll('.popt').forEach(o=>o.className='popt');
+  $('#predictOverlay').classList.add('show');
+}
+document.querySelectorAll('.popt').forEach(o=>{
+  o.onclick=()=>{
+    const guess=o.dataset.guess;
+    document.querySelectorAll('.popt').forEach(x=>{
+      if(x.dataset.guess===predictExpected) x.classList.add('correct');
+    });
+    if(guess!==predictExpected) o.classList.add('wrong');
+    setTimeout(()=>{ $('#predictOverlay').classList.remove('show'); stepper.next(true); }, 750);
+  };
+});
+$('#predictSkip').onclick=()=>{ $('#predictOverlay').classList.remove('show'); stepper.next(true); };
+
+/* keyboard */
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT') return;
+  if(EXAMPLES[currentKey].dual){
+    if(e.key==='ArrowRight'){ dualNext(); } else if(e.key==='ArrowLeft'){ dualPrev(); }
+    else if(e.key===' '){ e.preventDefault(); dualTogglePlay(); } else if(e.key.toLowerCase()==='r'){ dualReset(); }
+    return;
+  }
+  if(e.key==='ArrowRight'){ e.preventDefault(); tryNext(); }
+  else if(e.key==='ArrowLeft'){ e.preventDefault(); stopPlay(); stepper.prev(); }
+  else if(e.key===' '){ e.preventDefault(); togglePlay(); }
+  else if(e.key.toLowerCase()==='r'){ stopPlay(); stepper.reset(); }
+});
+
+/* ============================================================
+   DUAL VIEW (Recursion x Iteration)
+   ============================================================ */
+let dualA=null, dualB=null, dualTimer=null;
+function loadDual(){
+  stopDualPlay();
+  dualA=new Stepper({code:$('#codeA'),tree:$('#treeA'),narration:$('#narA')});
+  dualB=new Stepper({code:$('#codeB'),tree:$('#treeB'),narration:$('#narB')});
+  dualA.load({tracer:traceCombinationsBinary,code:CODE.combinationsBinary,inputs:{n:4,k:2}});
+  dualB.load({tracer:traceCombinations,code:CODE.combinations,inputs:{n:4,k:2}});
+  updateDualStepc();
+}
+function updateDualStepc(){
+  $('#dStepc').textContent=`A ${dualA.idx+1}/${dualA.events.length} · B ${dualB.idx+1}/${dualB.events.length}`;
+}
+function dualNext(){ const a=dualA.next(true), b=dualB.next(true); updateDualStepc(); if(!a&&!b) stopDualPlay(); }
+function dualPrev(){ dualA.prev(); dualB.prev(); updateDualStepc(); }
+function dualReset(){ stopDualPlay(); dualA.reset(); dualB.reset(); updateDualStepc(); }
+function dualTogglePlay(){ dualTimer?stopDualPlay():startDualPlay(); }
+function startDualPlay(){ $('#dPlay').textContent='⏸ Pause'; const spd=+$('#dSpeed').value;
+  dualTimer=setInterval(()=>{ const a=dualA.next(true),b=dualB.next(true); updateDualStepc(); if(!a&&!b) stopDualPlay(); },spd); }
+function stopDualPlay(){ if(dualTimer){clearInterval(dualTimer);dualTimer=null;} $('#dPlay').textContent='▶ Play'; }
+$('#dReset').onclick=dualReset; $('#dPrev').onclick=()=>{stopDualPlay();dualPrev();};
+$('#dNext').onclick=()=>{stopDualPlay();dualNext();}; $('#dPlay').onclick=dualTogglePlay;
+$('#dSpeed').oninput=()=>{ if(dualTimer){stopDualPlay();startDualPlay();} };
+
+/* boot */
+selectTab('subsets');
+</script>
+</body>
+</html>

@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Find Minimum in Rotated Sorted Array — Animated</title>
+<style>
+  :root{--bg:#0f172a;--surface:#1e293b;--surface2:#273449;--border:#334155;
+  --text:#e2e8f0;--muted:#94a3b8;--teal:#2dd4bf;--yellow:#fbbf24;
+  --red:#f87171;--green:#4ade80;--blue:#60a5fa;--purple:#a78bfa;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.6;padding-bottom:60px}
+  a{color:var(--teal);text-decoration:none}
+  code,.mono{font-family:"SF Mono",Menlo,Consolas,monospace}
+
+  /* nav */
+  .nav{position:sticky;top:0;z-index:50;background:rgba(15,23,42,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+  .nav a{color:var(--muted);font-size:14px;font-weight:500}
+  .nav a:hover{color:var(--teal)}
+  .nav .brand{color:var(--text);font-weight:700;margin-right:auto}
+
+  /* layout */
+  .wrap{max-width:1040px;margin:0 auto;padding:24px 20px}
+  h1{font-size:26px;margin-bottom:4px}
+  .sub{color:var(--muted);margin-bottom:20px;font-size:15px}
+  h2{font-size:19px;margin:34px 0 12px;color:var(--text)}
+  h2 .num{color:var(--teal);font-weight:800;margin-right:8px}
+  p{margin:10px 0}
+
+  /* prose boxes */
+  .why{background:rgba(45,212,191,.07);border-left:3px solid var(--teal);padding:14px 18px;border-radius:0 10px 10px 0;margin:18px 0;font-size:14.5px}
+  .why b{color:var(--teal)}
+  .keytake{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 22px;margin-top:26px;font-size:14.5px}
+  .keytake h3{color:var(--teal);font-size:16px;margin-bottom:10px}
+  .keytake ul{margin-left:18px}
+  .keytake li{margin:7px 0}
+  .keytake b{color:var(--yellow)}
+
+  /* stage narration */
+  .stage{display:flex;align-items:center;gap:14px;margin-bottom:14px;min-height:50px;flex-wrap:wrap}
+  .stage-badge{flex-shrink:0;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 16px;font-weight:800;font-size:14px;letter-spacing:.5px;transition:.3s}
+  .stage-badge.live{background:var(--teal);color:#0b1120;border-color:var(--teal)}
+  .stage-badge.go-left{background:var(--green);color:#0b1120;border-color:var(--green)}
+  .stage-badge.go-right{background:var(--red);color:#0b1120;border-color:var(--red)}
+  .stage-badge.found{background:var(--yellow);color:#0b1120;border-color:var(--yellow)}
+  .stage-text{font-size:15px}
+  .stage-text b{color:var(--yellow)}
+  .g{color:var(--green);font-weight:700}
+  .r{color:var(--red);font-weight:700}
+
+  /* visualization card */
+  .stagearea{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:26px 22px 30px}
+  .compassbar{text-align:center;margin-bottom:18px;font-family:"SF Mono",Menlo,monospace;font-size:15px;color:var(--muted)}
+  .compassbar b{color:var(--yellow);font-size:17px}
+  .compassbar .run-small{color:var(--teal);font-weight:700}
+  .compassbar .run-big{color:var(--purple);font-weight:700}
+  .views{display:flex;gap:30px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
+  .linear-view{flex:1 1 460px;min-width:300px}
+  .dial-view{flex:0 0 220px;display:flex;flex-direction:column;align-items:center}
+  .dial-cap{font-size:12px;color:var(--muted);margin-top:6px;text-align:center}
+
+  /* linear cells */
+  .arr{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:4px 0 2px}
+  .cellbox{display:flex;flex-direction:column;align-items:center;gap:3px}
+  .cell{width:50px;height:50px;display:flex;align-items:center;justify-content:center;background:var(--surface2);border:2px solid var(--border);border-radius:10px;font-size:17px;font-weight:700;font-family:"SF Mono",Menlo,monospace;transition:.4s}
+  .cell.dim{opacity:.28;filter:grayscale(.6)}
+  .cell.win{border-color:var(--surface2);background:rgba(45,212,191,.06)}
+  .cell.atL{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}
+  .cell.atR{border-color:var(--purple);box-shadow:0 0 0 1px var(--purple)}
+  .cell.atM{border-color:var(--yellow);background:rgba(251,191,36,.14)}
+  .cell.atLR{border-color:var(--yellow)}
+  .cell.runsmall{background:rgba(45,212,191,.16)}   /* m landed on the smaller run */
+  .cell.runbig{background:rgba(167,139,250,.16)}     /* m landed on the larger run */
+  .cell.anchor{box-shadow:inset 0 0 0 2px var(--purple)}  /* the nums[r] anchor we compare against */
+  .cell.answer{border-color:var(--yellow);background:rgba(251,191,36,.25);box-shadow:0 0 18px rgba(251,191,36,.5);animation:pop .4s ease}
+  .cell.ruled{border-color:var(--red);border-style:dashed;background:rgba(248,113,113,.1);opacity:.55;filter:none;animation:ruleout .4s ease}
+  @keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.18)}100%{transform:scale(1)}}
+  @keyframes ruleout{0%{opacity:1}100%{opacity:.55}}
+  .idx{font-size:11px;color:var(--muted);font-family:"SF Mono",Menlo,monospace}
+  .ruledtag{height:14px;font-size:10px;font-weight:700;color:var(--red);font-family:-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;white-space:nowrap}
+  .ptr{height:22px;font-size:12px;font-weight:800;font-family:"SF Mono",Menlo,monospace;display:flex;align-items:flex-start;justify-content:center}
+  .ptr.l{color:var(--blue)}.ptr.m{color:var(--yellow)}.ptr.r{color:var(--purple)}
+
+  /* dial */
+  .dial-view svg{display:block}
+
+  /* controls */
+  .controls{display:flex;gap:10px;align-items:center;margin:20px 0 4px;flex-wrap:wrap}
+  .btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:9px;cursor:pointer;font-size:14px;font-weight:700;transition:.15s}
+  .btn:hover:not(:disabled){border-color:var(--teal);color:var(--teal)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn.primary{background:var(--teal);color:#0b1120;border-color:var(--teal)}
+  .btn.primary:hover:not(:disabled){color:#0b1120}
+  .stepcount{color:var(--muted);font-size:13px;margin-left:auto;font-family:"SF Mono",Menlo,monospace}
+  .candcount{text-align:center;margin-top:14px;font-size:13.5px;color:var(--muted);font-family:"SF Mono",Menlo,monospace}
+  .candcount b{color:var(--teal);font-size:16px}
+  .candcount .lead{font-family:-apple-system,sans-serif}
+  .kbdhint{font-size:12px;color:var(--muted);margin-top:6px}
+  .kbdhint kbd{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-family:"SF Mono",Menlo,monospace;font-size:11px}
+
+  /* preset switcher */
+  .presets{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .preset{background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:8px 13px;border-radius:8px;cursor:pointer;font-size:13px;font-family:"SF Mono",Menlo,monospace;transition:.15s}
+  .preset:hover{border-color:var(--teal);color:var(--text)}
+  .preset.sel{border-color:var(--teal);color:var(--teal);background:rgba(45,212,191,.1);font-weight:700}
+  .preset .tag{display:block;font-size:10px;color:var(--muted);font-family:-apple-system,sans-serif;margin-top:2px}
+  .preset.sel .tag{color:var(--teal)}
+
+  /* code block */
+  pre{background:#0b1120;border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow-x:auto;margin:14px 0;font-size:13.5px;line-height:1.7}
+  pre code{color:var(--text)}
+  .cmt{color:var(--muted)}.kw{color:var(--purple)}.fn{color:var(--blue)}.str{color:var(--green)}
+
+  /* two-case truth table */
+  .cases{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0}
+  .case{flex:1 1 280px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;font-size:14px}
+  .case h4{font-size:14px;margin-bottom:8px}
+  .case.lcase h4{color:var(--green)}.case.rcase h4{color:var(--red)}
+  .case .mono{font-size:13px;color:var(--yellow)}
+
+  /* quiz */
+  .q{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:16px 20px;margin:12px 0}
+  .q .prompt{font-weight:600;font-size:15px}
+  .q .prompt .mono{color:var(--yellow)}
+  .q .reveal-btn{margin-top:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;transition:.15s}
+  .q .reveal-btn:hover{border-color:var(--teal);color:var(--teal)}
+  .q .solution{display:none;margin-top:14px;padding-top:14px;border-top:1px dashed var(--border);font-size:14.5px}
+  .q .solution.show{display:block}
+  .q .solution .mono{color:var(--teal)}
+  .q .solution b{color:var(--yellow)}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <span class="brand">Find Min in Rotated Sorted Array</span>
+  <a href="search-rotated-sorted-array.html">Search (sibling)</a>
+  <a href="../STRATEGY.md">DSA strategy</a>
+  <a href="../solved.md">solved.md</a>
+</nav>
+
+<div class="wrap">
+  <h1>Find Minimum in Rotated Sorted Array</h1>
+  <p class="sub">Binary search in <span class="mono">O(log n)</span> — at every step throw away the half that <em>can't</em> contain the minimum, and keep the half that must.</p>
+
+  <!-- ============ 1. INTUITION ============ -->
+  <h2><span class="num">1</span>The intuition first — what does "rotated" even look like?</h2>
+  <p>A sorted array <span class="mono">[1,2,3,4,5,6]</span> rotated some number of times becomes two sorted runs joined back-to-back, like <span class="mono">[4,5,6,1,2,3]</span>. Picture an <b>odometer that rolled past its max and wrapped around</b>: it keeps climbing, then suddenly drops off a cliff back to the lowest number — and <em>that cliff is the minimum</em>.</p>
+
+  <!-- static intuition svg: two runs + cliff -->
+  <div style="text-align:center;margin:14px 0">
+    <svg viewBox="0 0 460 130" width="100%" style="max-width:460px">
+      <!-- left run climbing -->
+      <polyline points="20,100 70,82 120,64 170,46" fill="none" stroke="var(--purple)" stroke-width="3"/>
+      <circle cx="20" cy="100" r="4" fill="var(--purple)"/><circle cx="70" cy="82" r="4" fill="var(--purple)"/>
+      <circle cx="120" cy="64" r="4" fill="var(--purple)"/><circle cx="170" cy="46" r="4" fill="var(--purple)"/>
+      <!-- the cliff -->
+      <line x1="170" y1="46" x2="200" y2="110" stroke="var(--yellow)" stroke-width="3" stroke-dasharray="5 4"/>
+      <!-- right run climbing -->
+      <polyline points="200,110 250,92 300,74 350,56 400,38" fill="none" stroke="var(--teal)" stroke-width="3"/>
+      <circle cx="200" cy="110" r="5" fill="var(--yellow)"/><circle cx="250" cy="92" r="4" fill="var(--teal)"/>
+      <circle cx="300" cy="74" r="4" fill="var(--teal)"/><circle cx="350" cy="56" r="4" fill="var(--teal)"/><circle cx="400" cy="38" r="4" fill="var(--teal)"/>
+      <text x="95" y="124" fill="var(--purple)" font-size="11" text-anchor="middle">larger run</text>
+      <text x="200" y="128" fill="var(--yellow)" font-size="11" text-anchor="middle">↑ minimum (the cliff)</text>
+      <text x="325" y="124" fill="var(--teal)" font-size="11" text-anchor="middle">smaller run</text>
+    </svg>
+  </div>
+
+  <div class="why">
+    <b>The whole strategy in one line:</b> compare the middle to the <span style="color:var(--purple);font-weight:700">right edge</span> <span class="mono">nums[r]</span> — that one comparison tells you which run <span class="mono">m</span> sits on, and the minimum is always on the smaller run.
+    <br><br>
+    If <span class="mono">nums[m] &lt; nums[r]</span>, then <span class="mono">m</span> is on the <span style="color:var(--teal);font-weight:700">smaller run</span> (at or past the cliff). The minimum is at <span class="mono">m</span> or to its left → keep <span class="mono">m</span> as a candidate, <span class="mono">r = m</span>.
+    <br>
+    Otherwise <span class="mono">m</span> is on the <span style="color:var(--purple);font-weight:700">larger run</span> (before the cliff). Everything from <span class="mono">l..m</span> is above the cliff → the minimum is strictly to the right, <span class="mono">l = m+1</span>.
+    <br><br>
+    Either way you throw away a whole half — and the comparison is always made against the <em>right edge</em>, because that anchor reliably tells you which side of the cliff <span class="mono">m</span> is on.
+  </div>
+
+  <!-- ============ 2. WALKTHROUGH ============ -->
+  <h2><span class="num">2</span>Watch it converge — and why shrinking <em>finds</em> the answer</h2>
+
+  <div class="why">
+    <b>Why does throwing half away land you on the minimum?</b> Think of <em>Guess Who?</em>. You never point at one face and ask "is it this one?" — you ask questions that flip down <em>whole rows</em> you've ruled out. The last face standing wins by elimination.
+    <br><br>
+    This search works the same way. Each step deletes a half <em>only</em> after proving every cell in it is bigger than something else — so it <b>can't</b> be the minimum. The half you keep is <em>guaranteed</em> to still contain the min. That's the promise the loop never breaks: <span class="mono">the minimum is always inside [l, r]</span>. Shrink that window enough and it collapses to one cell — and that lone survivor <em>is</em> the answer. You didn't test it. You cornered it. Watch the <span class="r">✗ ruled out</span> tags below — that's elimination happening.
+  </div>
+
+  <div class="stage">
+    <div class="stage-badge" id="stageBadge">START</div>
+    <div class="stage-text" id="stageText"></div>
+  </div>
+
+  <div class="stagearea">
+    <div class="compassbar" id="compassbar"></div>
+    <div class="views">
+      <div class="linear-view">
+        <div class="arr" id="arr"></div>
+      </div>
+      <div class="dial-view">
+        <svg id="dial" viewBox="0 0 200 200" width="200" height="200"></svg>
+        <div class="dial-cap">Same array on a ring —<br><span class="run-small" style="color:var(--teal)">teal</span> = smaller run, <span style="color:var(--purple)">purple</span> = larger run</div>
+      </div>
+    </div>
+
+    <div class="candcount" id="candcount"></div>
+
+    <div class="controls">
+      <button class="btn" id="backBtn" onclick="prev()">◀ Back</button>
+      <button class="btn primary" id="stepBtn" onclick="next()">Step ▶</button>
+      <button class="btn" onclick="resetSteps()">Reset ↺</button>
+      <span class="stepcount" id="stepcount"></span>
+    </div>
+    <div class="kbdhint">Keyboard: <kbd>→</kbd>/<kbd>Space</kbd> step · <kbd>←</kbd> back · <kbd>R</kbd> reset</div>
+  </div>
+
+  <p style="margin-top:18px;font-size:14px;color:var(--muted)">Try a different array:</p>
+  <div class="presets" id="presets"></div>
+
+  <!-- ============ 3. DECISION LOGIC ============ -->
+  <h2><span class="num">3</span>Why compare to <span class="mono" style="color:var(--purple)">nums[r]</span> — and not <span class="mono" style="color:var(--blue)">nums[l]</span>?</h2>
+  <p>The whole algorithm rests on the comparison <span class="mono">nums[m] &lt; nums[r]</span>. Here's both branches laid bare:</p>
+  <div class="cases">
+    <div class="case lcase">
+      <h4>✓ nums[m] &lt; nums[r] → go left</h4>
+      <p><span class="mono">m</span> is on the smaller run (at or past the cliff). The minimum is at <span class="mono">m</span> or to its left.</p>
+      <p>So <span class="mono">r = m</span> — we keep <span class="mono">m</span> because it might <em>be</em> the answer. Never <span class="mono">r = m-1</span>, or you could skip over the true minimum.</p>
+    </div>
+    <div class="case rcase">
+      <h4>✗ nums[m] ≥ nums[r] → go right</h4>
+      <p><span class="mono">m</span> is on the larger run (before the cliff). Everything from <span class="mono">l..m</span> is bigger than <span class="mono">nums[r]</span>.</p>
+      <p>So <span class="mono">l = m+1</span> — the minimum is strictly to the right, and <span class="mono">m</span> itself can't be it.</p>
+    </div>
+  </div>
+  <div class="why">
+    <b>Why <span class="mono">nums[r]</span> and not <span class="mono">nums[l]</span>?</b> The right edge is a reliable anchor. If you compared against <span class="mono">nums[l]</span> instead, a fully-sorted (or fully-rotated) array like <span class="mono">[1,2,3,4]</span> breaks the logic — <span class="mono">nums[m] &gt; nums[l]</span> is true even though the minimum is at <span class="mono">l</span>. Comparing to the right edge handles the not-rotated case for free: <span class="mono">nums[m] &lt; nums[r]</span> is always true, so it keeps walking left until <span class="mono">l == r == 0</span>.
+  </div>
+
+  <!-- ============ 4. THE CODE ============ -->
+  <h2><span class="num">4</span>The code — and why the loop is <span class="mono">while l &lt; r</span></h2>
+<pre><code><span class="kw">def</span> <span class="fn">findMin</span>(nums):
+    l, r = <span class="kw">0</span>, len(nums) - <span class="kw">1</span>
+    <span class="kw">while</span> l &lt; r:                  <span class="cmt"># strictly &lt; : stop when the window is one cell</span>
+        m = l + (r - l) // <span class="kw">2</span>      <span class="cmt"># overflow-safe midpoint</span>
+        <span class="kw">if</span> nums[m] &lt; nums[r]:       <span class="cmt"># m on the smaller run → min at m or left</span>
+            r = m                  <span class="cmt"># keep m as a candidate</span>
+        <span class="kw">else</span>:                      <span class="cmt"># m on the larger run → min strictly right</span>
+            l = m + <span class="kw">1</span>
+    <span class="kw">return</span> nums[l]                <span class="cmt"># l == r → the minimum</span></code></pre>
+  <div class="why">
+    <b>Why <span class="mono">l &lt; r</span> here, but <span class="mono">l &lt;= h</span> in <a href="search-rotated-sorted-array.html">Search</a>?</b> Different goals → different boundaries. Find-Min shrinks a window toward a <em>single guaranteed survivor</em> — the minimum is always in the window, so the moment <span class="mono">l == r</span> the one remaining cell <em>is</em> the answer; stop and return it. Search might find <em>nothing</em> (the target can be absent), so it keeps going until the window is genuinely empty (<span class="mono">l &gt; h</span>) before giving up with <span class="mono">-1</span>. Here, using <span class="mono">&lt;=</span> with <span class="mono">r = m</span> would also loop forever when <span class="mono">l == r == m</span> — another reason the strict <span class="mono">&lt;</span> is right.
+  </div>
+
+  <!-- ============ 5. SELF-QUIZ ============ -->
+  <h2><span class="num">5</span>Check yourself — recall before you reveal</h2>
+  <p style="font-size:14px;color:var(--muted)">Answer in your head (or on paper) first. No scores here — just reveal and compare.</p>
+
+  <div class="q">
+    <div class="prompt">Q1. For <span class="mono">[5,6,7,8,1,2,3]</span> (indices 0–6): what are <span class="mono">l, m, r</span> right after the <em>first</em> iteration of the loop?</div>
+    <button class="reveal-btn" onclick="toggle('s1')">Reveal</button>
+    <div class="solution" id="s1">
+      Start: <span class="mono">l=0, r=6</span>. <span class="mono">m = 0 + (6-0)//2 = 3</span>, so <span class="mono">nums[3]=8</span>. Compare <span class="mono">8 &lt; nums[6]=3?</span> → <b>No</b> → go right → <span class="mono">l = m+1 = 4</span>.
+      <br>After iteration 1: <span class="mono">l=4, r=6</span> (m was 3). The window has collapsed to the smaller run <span class="mono">[1,2,3]</span> in one step.
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="prompt">Q2. Why is it <span class="mono">r = m</span> and not <span class="mono">r = m - 1</span> in the "go left" branch?</div>
+    <button class="reveal-btn" onclick="toggle('s2')">Reveal</button>
+    <div class="solution" id="s2">
+      Because when <span class="mono">nums[m] &lt; nums[r]</span>, <b>m itself might be the minimum</b> — it's the smallest element we've seen so far on the smaller run. Discarding it with <span class="mono">m-1</span> could throw away the true answer. We only ever discard the right half (which we've proven is larger) by moving <span class="mono">r</span> down <em>to</em> m.
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="prompt">Q3. What's the loop invariant that guarantees the minimum never leaves the window <span class="mono">[l, r]</span>?</div>
+    <button class="reveal-btn" onclick="toggle('s3')">Reveal</button>
+    <div class="solution" id="s3">
+      <b>The minimum is always within <span class="mono">[l, r]</span>.</b> Each branch only discards elements proven to be <em>not</em> the minimum: "go right" drops <span class="mono">l..m</span> because all of them exceed <span class="mono">nums[r]</span>; "go left" drops <span class="mono">m+1..r</span> while keeping <span class="mono">m</span> as a live candidate. The window shrinks by ~half each step but never excludes the true min → it lands exactly on it when <span class="mono">l == r</span>.
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="prompt">Q4. The array <span class="mono">[11,13,15,17]</span> was "rotated n times" (i.e. back to sorted). Does this code still return the right answer, and what does it do?</div>
+    <button class="reveal-btn" onclick="toggle('s4')">Reveal</button>
+    <div class="solution" id="s4">
+      Yes — returns <span class="mono">11</span>. Since the array is fully sorted, <span class="mono">nums[m] &lt; nums[r]</span> is true at every step, so it always goes left (<span class="mono">r = m</span>), walking the window down to <span class="mono">l == r == 0</span>. This is exactly why we anchor on <span class="mono">nums[r]</span>: the not-rotated case is handled with zero special-casing.
+    </div>
+  </div>
+
+  <!-- ============ KEY TAKEAWAYS ============ -->
+  <div class="keytake">
+    <h3>What you just watched</h3>
+    <ul>
+      <li>A rotated sorted array is <b>two sorted runs</b> with one <b>cliff</b> — the minimum is the bottom of that cliff.</li>
+      <li>Compare the middle to the <b>right edge</b> <span class="mono">nums[r]</span>: smaller → min is at/left of m (<span class="mono">r=m</span>); not smaller → min is strictly right (<span class="mono">l=m+1</span>).</li>
+      <li><span class="mono">r = m</span>, never <span class="mono">r = m-1</span> — m might be the answer.</li>
+      <li><span class="mono">while l &lt; r</span> (strict), and the answer is <span class="mono">nums[l]</span> when the window collapses to one cell.</li>
+      <li>O(log n) time, O(1) space — and the not-rotated array works for free.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+// ============ DATA: presets ============
+const PRESETS = [
+  {nums:[3,4,5,6,1,2],   tag:"Example 1 · min=1"},
+  {nums:[4,5,6,7,0,1,2], tag:"classic · min=0"},
+  {nums:[11,13,15,17],   tag:"not rotated · min=11"},
+  {nums:[2,1],           tag:"two elements · min=1"},
+  {nums:[1],             tag:"single · min=1"},
+];
+
+// ============ build steps by SIMULATING the actual algorithm ============
+// Each "iteration" emits two frames: a 'compare' frame (m shown, decision pending)
+// and a resolution frame ('left'/'right') after l/r move. Faithful by construction.
+function buildSteps(nums){
+  const steps=[];
+  let l=0, r=nums.length-1;
+  // ruledFrom..ruledTo = index range eliminated THIS step (so we can flag it).
+  // cand = how many cells are still candidates for the min (window width).
+  steps.push({l, r, m:null, decision:'init', cand:r-l+1});
+  while(l < r){
+    const m = l + ((r - l) >> 1);
+    const goLeft = nums[m] < nums[r];
+    steps.push({l, r, m, decision:'compare', goLeft, cand:r-l+1});
+    let ruledFrom, ruledTo;
+    if(goLeft){
+      // keep m as candidate, delete everything strictly right of m
+      ruledFrom = m+1; ruledTo = r;
+      r = m;
+    } else {
+      // delete l..m (all proven >= nums[r], so none can be the min)
+      ruledFrom = l; ruledTo = m;
+      l = m + 1;
+    }
+    steps.push({l, r, m, decision: goLeft ? 'left' : 'right', goLeft, ruledFrom, ruledTo, cand:r-l+1});
+  }
+  steps.push({l, r, m:null, decision:'found', cand:1}); // l === r
+  return steps;
+}
+
+// ============ state ============
+let curIdx = 0;            // which preset
+let nums = PRESETS[0].nums;
+let steps = buildSteps(nums);
+let step = 0;
+let MAXSTEP = steps.length - 1;
+
+// ============ rendering ============
+function setStage(badge, text, cls){
+  const b = document.getElementById('stageBadge');
+  b.textContent = badge;
+  b.className = 'stage-badge' + (cls ? ' ' + cls : '');
+  document.getElementById('stageText').innerHTML = text;
+}
+
+function render(){
+  const st = steps[step];
+  document.getElementById('stepcount').textContent = `Step ${step} / ${MAXSTEP}`;
+  document.getElementById('backBtn').disabled = step === 0;
+  const sb = document.getElementById('stepBtn');
+  sb.disabled = step >= MAXSTEP;
+  sb.textContent = step >= MAXSTEP ? 'Done ✓' : 'Step ▶';
+
+  const found = st.decision === 'found';
+
+  // cells eliminated THIS step (only present on left/right resolution frames)
+  const justRuled = i => st.ruledFrom !== undefined && i >= st.ruledFrom && i <= st.ruledTo;
+
+  // which run is m on? only meaningful on the 'compare' frame, where we judge nums[m] vs nums[r].
+  // goLeft === true  → nums[m] < nums[r] → m on the SMALLER run (teal)
+  // goLeft === false → m on the LARGER run (purple)
+  const showRun = st.decision === 'compare' && st.m !== null;
+
+  // ---- linear cells ----
+  const cells = nums.map((v, i) => {
+    const inWin = i >= st.l && i <= st.r;
+    let cls = inWin ? 'win' : 'dim';
+    if(found && i === st.l){ cls = 'answer'; }
+    else if(justRuled(i)){ cls = 'ruled'; }
+    else {
+      if(i === st.l && i === st.r) cls += ' atLR';
+      else { if(i === st.l) cls += ' atL'; if(i === st.r) cls += ' atR'; }
+      if(st.m !== null && i === st.m) cls += ' atM';
+      // shade m by which run it landed on; box the r-anchor we compared against
+      if(showRun && i === st.m) cls += st.goLeft ? ' runsmall' : ' runbig';
+      if(showRun && i === st.r && i !== st.m) cls += ' anchor';
+    }
+    // pointer labels under the cell
+    let ptr = '';
+    if(!found){
+      const labels = [];
+      if(i === st.l) labels.push('<span class="ptr l">l</span>');
+      if(st.m !== null && i === st.m) labels.push('<span class="ptr m">m</span>');
+      if(i === st.r) labels.push('<span class="ptr r">r</span>');
+      ptr = labels.join('');
+    } else if(i === st.l){
+      ptr = '<span class="ptr m">min</span>';
+    }
+    // "ruled out" tag under the cells eliminated this step
+    const tag = justRuled(i) ? '<span class="ruledtag">✗ ruled out</span>' : '<span class="ruledtag">&nbsp;</span>';
+    return `<div class="cellbox">
+        <div class="cell ${cls}">${v}</div>
+        <div class="idx">${i}</div>
+        <div style="display:flex;gap:4px">${ptr || '&nbsp;'}</div>
+        ${tag}
+      </div>`;
+  }).join('');
+  document.getElementById('arr').innerHTML = cells;
+
+  // ---- compass banner: the live decision anchor (always on screen) ----
+  const cb = document.getElementById('compassbar');
+  if(found){
+    cb.innerHTML = `minimum cornered at index <b>${st.l}</b> → value <b>${nums[st.l]}</b>`;
+  } else if(st.m !== null){
+    const mv = nums[st.m], rv = nums[st.r];
+    const onRun = st.goLeft
+      ? `<span class="run-small">smaller run</span>`
+      : `<span class="run-big">larger run</span>`;
+    cb.innerHTML = `comparing nums[m]=<b>${mv}</b> vs right edge nums[r]=<b>${rv}</b> → m is on the ${onRun}`;
+  } else {
+    cb.innerHTML = `anchor = right edge nums[r]=<b>${nums[st.r]}</b> · every step compares the middle against it`;
+  }
+
+  // ---- candidate counter ("could-be-the-min" cells = window width) ----
+  const cc = document.getElementById('candcount');
+  if(found){
+    cc.innerHTML = `<span class="lead">candidates left:</span> <b>1</b> <span class="lead">— cornered. That cell IS the minimum.</span>`;
+  } else {
+    cc.innerHTML = `<span class="lead">cells that could still be the min:</span> <b>${st.cand}</b> <span class="lead">(window [${st.l}, ${st.r}])</span>`;
+  }
+
+  // ---- circular dial ----
+  drawDial(st, found);
+
+  // ---- narration ----
+  if(st.decision === 'init'){
+    setStage('START', `Window is the whole array: <b>l=${st.l}</b>, <b>r=${st.r}</b>. We'll shrink it until <span class="mono">l == r</span>.`, 'live');
+  } else if(st.decision === 'compare'){
+    const mv = nums[st.m], rv = nums[st.r];
+    const cmp = `nums[m]=<b>${mv}</b> &lt; nums[r]=<b>${rv}</b>?`;
+    const ans = st.goLeft
+      ? `<span class="g">Yes</span> → m is on the smaller run → go left, <span class="mono">r = m</span>.`
+      : `<span class="r">No</span> → m is on the larger run → go right, <span class="mono">l = m+1</span>.`;
+    setStage('COMPARE', `m = ${st.m}. ${cmp} ${ans}`, 'live');
+  } else if(st.decision === 'left'){
+    setStage('GO LEFT', `Deleted everything <span class="r">right of m</span> — that side is sorted-ascending, so all of it is bigger than <span class="mono">nums[m]</span> and can't be the min. Kept m as a candidate. The minimum is still <b>trapped inside [${st.l}, ${st.r}]</b>.`, 'go-left');
+  } else if(st.decision === 'right'){
+    const rv = nums[steps[step-1].r];
+    setStage('GO RIGHT', `Deleted the <span class="r">left half (l..m)</span> — every cell there is ≥ <span class="mono">nums[r]=${rv}</span>, so none can be the min. The minimum is still <b>trapped inside [${st.l}, ${st.r}]</b>.`, 'go-right');
+  } else if(found){
+    setStage('FOUND', `<span class="mono">l == r == ${st.l}</span> → the minimum is <b>${nums[st.l]}</b>.`, 'found');
+  }
+}
+
+// ---- circular dial drawing (SVG, recomputed each render) ----
+function drawDial(st, found){
+  const svg = document.getElementById('dial');
+  const cx=100, cy=100, R=72, n=nums.length;
+  const pos = i => {
+    // start at top (12 o'clock), go clockwise
+    const a = -Math.PI/2 + (2*Math.PI*i)/n;
+    return { x: cx + R*Math.cos(a), y: cy + R*Math.sin(a), a };
+  };
+  let out = '';
+  const arc = (from, to, color, width, opacity) => {
+    if(to <= from) return '';
+    const aA = pos(from).a, aB = pos(to).a;
+    const x1 = cx + R*Math.cos(aA), y1 = cy + R*Math.sin(aA);
+    const x2 = cx + R*Math.cos(aB), y2 = cy + R*Math.sin(aB);
+    const large = (to - from) > n/2 ? 1 : 0;
+    return `<path d="M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${R} ${R} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)}" fill="none" stroke="${color}" stroke-width="${width}" opacity="${opacity}"/>`;
+  };
+  // shrinking-window arc (from l to r, clockwise) — the candidate region
+  if(!found && n > 1){
+    out += arc(st.l, st.r, 'var(--teal)', 3, 0.45);
+  }
+  // run-membership arc on the COMPARE frame: which side of m is the run we identified?
+  // goLeft → m on smaller run, that run is [m..r] (teal); else m on larger run [l..m] (purple)
+  if(st.decision === 'compare' && st.m !== null && n > 1){
+    if(st.goLeft) out += arc(st.m, st.r, 'var(--teal)', 6, 0.4);
+    else          out += arc(st.l, st.m, 'var(--purple)', 6, 0.4);
+  }
+  // nodes
+  for(let i=0;i<n;i++){
+    const p = pos(i);
+    let fill='var(--surface2)', stroke='var(--border)', tcol='var(--muted)', rad=13;
+    const inWin = i >= st.l && i <= st.r;
+    if(!inWin){ fill='var(--surface2)'; stroke='var(--border)'; tcol='#475569'; }
+    if(found && i === st.l){ fill='var(--yellow)'; stroke='var(--yellow)'; tcol='#0b1120'; rad=16; }
+    else {
+      if(st.m !== null && i === st.m){ fill='rgba(251,191,36,.2)'; stroke='var(--yellow)'; tcol='var(--yellow)'; }
+      if(i === st.l && !found){ stroke='var(--blue)'; if(tcol!=='var(--yellow)')tcol='var(--blue)'; }
+      if(i === st.r && !found){ stroke='var(--purple)'; if(tcol!=='var(--yellow)')tcol='var(--purple)'; }
+    }
+    out += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${rad}" fill="${fill}" stroke="${stroke}" stroke-width="2"/>`;
+    out += `<text x="${p.x.toFixed(1)}" y="${(p.y+4).toFixed(1)}" fill="${tcol}" font-size="12" font-weight="700" font-family="SF Mono,Menlo,monospace" text-anchor="middle">${nums[i]}</text>`;
+  }
+  svg.innerHTML = out;
+}
+
+// ============ controls ============
+function next(){ if(step < MAXSTEP){ step++; render(); } }
+function prev(){ if(step > 0){ step--; render(); } }
+function resetSteps(){ step = 0; render(); }
+
+function loadPreset(i){
+  curIdx = i;
+  nums = PRESETS[i].nums;
+  steps = buildSteps(nums);
+  MAXSTEP = steps.length - 1;
+  step = 0;
+  document.querySelectorAll('.preset').forEach((el,idx)=>el.classList.toggle('sel', idx===i));
+  render();
+}
+
+// build preset buttons
+document.getElementById('presets').innerHTML = PRESETS.map((p,i)=>
+  `<button class="preset ${i===0?'sel':''}" onclick="loadPreset(${i})">[${p.nums.join(',')}]<span class="tag">${p.tag}</span></button>`
+).join('');
+
+// quiz reveal
+function toggle(id){ document.getElementById(id).classList.toggle('show'); }
+
+// keyboard
+document.addEventListener('keydown', e=>{
+  if(e.key === 'ArrowRight' || e.key === ' '){ e.preventDefault(); next(); }
+  else if(e.key === 'ArrowLeft'){ e.preventDefault(); prev(); }
+  else if(e.key === 'r' || e.key === 'R'){ resetSteps(); }
+});
+
+render();
+</script>
+
+</body>
+</html>
