@@ -68,10 +68,13 @@ was real and it worked. So: surface the numbers, don't bury them.
 - **`PROGRESS.md` is the single source of truth for counts.** Per-topic, difficulty split,
   streak. Do not duplicate those tables into any other file — that's how trackers go stale
   and stop being believed.
-- The upstream source is the **NeetCode 250** dashboard, which you can't reach from the
-  sandbox. Take numbers from me or from `PROGRESS.md`. **Never estimate or infer a count.**
-  The official per-topic denominators are fixed and sum to exactly 250 — if a column doesn't
-  add up, something is wrong, so say so rather than papering over it.
+- The upstream source is the **NeetCode** dashboard, which you can't reach from the sandbox.
+  Take numbers from me or from `PROGRESS.md`. **Never estimate or infer a count.**
+  The denominators are fixed: core sums to exactly 150, extras to exactly 100. If a column
+  doesn't add up, something is wrong — say so rather than papering over it.
+- **The 150 is the finish line**, not the 250. Extras are a remedy for a finished topic that
+  still feels shaky, and only four topics take them by default: Graphs, Advanced Graphs,
+  1-D DP, 2-D DP. Never suggest grinding extras in the other fourteen.
 - `solved.md` carries the log. `RESUME.md` carries the one-line state.
 
 **When a streak breaks**, write the zero down and move on in the same breath. No commentary,

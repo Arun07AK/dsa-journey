@@ -8,15 +8,16 @@ Primary language: **C++**.
 
 ## The files that matter
 
-Currently **76 / 250** on the NeetCode 250 roadmap (Easy 20/60 · Medium 49/155 · Hard 7/35),
-at the end of the Graphs section with 16 of 21 done.
+The finish line is the **NeetCode 150**, plus 22 extras from the 250 in the four topics worth
+going deep on — Graphs, Advanced Graphs, 1-D DP, 2-D DP. The other 78 extras are skipped on
+purpose. Currently **76 solved in the 250 view**, at the end of Graphs with 16 of 21 done.
 
 | File | What it is |
 |---|---|
-| [`index.html`](index.html) | The front door. Progress ring, the 18-topic ladder with editable counts, a reconciliation check, and Bit. Open it by double-clicking. |
-| [`PROGRESS.md`](PROGRESS.md) | The tracker. Counts per topic against the official NeetCode 250 denominators, the streak, and what the numbers actually mean. Single source of truth — no other file duplicates these. |
+| [`index.html`](index.html) | The front door. Core progress against the 150, extras against the 22, the 18-topic ladder with editable counts, a reconciliation check, and Bit. Open it by double-clicking. |
+| [`PROGRESS.md`](PROGRESS.md) | The tracker. Core and extra counts per topic, the streak, and what the numbers actually mean. Single source of truth — no other file duplicates these. |
 | [`RESOURCES.md`](RESOURCES.md) | Researched, link-checked resources mapped to the topics still ahead, not a generic list. |
-| [`STRATEGY.md`](STRATEGY.md) | The NeetCode 250 topics in roadmap order, current counts, and the daily rule I actually keep (one problem a day — an easy one still counts). |
+| [`STRATEGY.md`](STRATEGY.md) | The approach, the 150/250 split, and the daily rule I actually keep (one problem a day — an easy one still counts). |
 | [`solved.md`](solved.md) | The growing pattern library. One entry per problem: the reusable idea, the key insight, and *what I'd recognise if I saw it cold again*. That last line is the whole point — it turns solving into recognising, which is what interviews test. |
 
 ## Interactive visualizers

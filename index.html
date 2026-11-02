@@ -121,8 +121,18 @@ h1,h2,h3{font-family:var(--display); margin:0; text-wrap:balance; letter-spacing
 /* ladder */
 .ladder-head{display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap}
 .ladder{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); overflow:hidden; box-shadow:var(--shadow)}
-.row{display:grid; grid-template-columns:20px minmax(0,1fr) 74px 92px 30px; gap:10px; align-items:center;
-  padding:11px 15px; border-top:1px solid var(--line)}
+.row{display:grid; grid-template-columns:20px minmax(0,1fr) 108px 108px; gap:10px; align-items:center;
+  padding:10px 15px; border-top:1px solid var(--line)}
+.hdr{display:grid; grid-template-columns:20px minmax(0,1fr) 108px 108px; gap:10px; padding:9px 15px;
+  background:var(--surface-2); border-bottom:1px solid var(--line)}
+.hdr span{font-family:var(--mono); font-size:9.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--faint); text-align:center}
+.hdr span:nth-child(2){text-align:left}
+.cell{display:flex; align-items:center; justify-content:flex-end; gap:4px}
+.cell.skip{opacity:.38}
+.cell.skip:focus-within{opacity:1}
+.den{font-family:var(--mono); font-size:11px; color:var(--faint); white-space:nowrap; width:24px; text-align:left}
+.xbar{height:7px;border-radius:99px;background:var(--bg-tint);overflow:hidden}
+.xbar i{display:block;height:100%;border-radius:99px;background:var(--amber);transition:width .35s}
 .row:first-child{border-top:0}
 .row.current{background:var(--violet-soft)}
 .row.done .rname{color:var(--soft)}
@@ -130,6 +140,8 @@ h1,h2,h3{font-family:var(--display); margin:0; text-wrap:balance; letter-spacing
 .rname{font-weight:600; font-size:14px; min-width:0; overflow-wrap:anywhere}
 .rname .tag{font-family:var(--mono); font-size:9.5px; letter-spacing:.1em; text-transform:uppercase;
   padding:2px 6px; border-radius:5px; margin-left:7px; vertical-align:1.5px; background:var(--violet); color:#fff; font-weight:600}
+.rname .deep{font-family:var(--mono); font-size:9px; letter-spacing:.09em; text-transform:uppercase; font-weight:700;
+  padding:2px 5px; border-radius:5px; margin-left:6px; vertical-align:1.5px; background:var(--amber-soft); color:var(--amber)}
 .rbar{height:8px; border-radius:99px; background:var(--bg-tint); overflow:hidden}
 .rbar i{display:block;height:100%;border-radius:99px;background:var(--accent);transition:width .35s cubic-bezier(.2,.7,.2,1)}
 .rbar.unknown{background:transparent; border:1px dashed var(--line-strong); opacity:.75}
@@ -167,8 +179,10 @@ dialog::backdrop{background:rgba(8,12,20,.55)}
 .dlg textarea{width:100%; height:300px; font-family:var(--mono); font-size:11.5px; line-height:1.5;
   border:1px solid var(--line); border-radius:9px; padding:11px; background:var(--surface-2); color:var(--ink); resize:vertical}
 @media (max-width:480px){
-  .row{grid-template-columns:18px minmax(0,1fr) 92px; gap:9px}
-  .rtot,.rbar{display:none}
+  .row,.hdr{grid-template-columns:18px minmax(0,1fr) 104px 104px; gap:7px}
+  .rbar,.rtot{display:none}
+  .den{width:20px;font-size:10px}
+  .cnt{width:34px}
   .ring-wrap{width:112px;height:112px}
   .summary{padding:16px; gap:16px}
 }
@@ -198,16 +212,21 @@ dialog::backdrop{background:rgba(8,12,20,.55)}
                 style="transition:stroke-dashoffset .6s cubic-bezier(.2,.7,.2,1)"></circle>
       </svg>
       <div class="ring-center">
-        <span class="ring-num" id="ringNum">0</span>
-        <span class="ring-of">of 250 solved</span>
+        <span class="ring-num" id="ringNum">&mdash;</span>
+        <span class="ring-of">of 150 core</span>
       </div>
     </div>
     <div class="summary-main">
       <div class="dsplit" id="dsplit"></div>
+      <div class="drow" style="margin-top:4px;padding-top:9px;border-top:1px solid var(--line)">
+        <span class="dname">Extras</span>
+        <span class="xbar"><i id="xFill" style="width:0%"></i></span>
+        <span class="dval" id="xVal">&mdash; / 100</span>
+      </div>
       <div class="chips">
         <span class="chip">Streak <b id="cStreak">0</b></span>
         <span class="chip warm">Best <b id="bStreak">54</b> days</span>
-        <span class="chip"><b id="leftNum">174</b> left</span>
+        <span class="chip"><b id="leftNum">&mdash;</b> core left</span>
       </div>
     </div>
   </section>
@@ -243,9 +262,12 @@ dialog::backdrop{background:rgba(8,12,20,.55)}
 
   <div class="ladder-head">
     <h2 style="font-size:16px">The ladder</h2>
-    <span class="eyebrow">18 topics &middot; roadmap order</span>
+    <span class="eyebrow">150 core &middot; 22 extras to do &middot; 78 skipped</span>
   </div>
-  <section class="ladder" id="ladder"></section>
+  <section class="ladder">
+    <div class="hdr"><span>#</span><span>Topic</span><span>Core</span><span>Extras</span></div>
+    <div id="ladder"></div>
+  </section>
 
   <div class="tools">
     <button class="btn primary" id="exportBtn" type="button">Export PROGRESS.md table</button>
@@ -262,7 +284,8 @@ dialog::backdrop{background:rgba(8,12,20,.55)}
     <a href="visualizations/backtracking/backtracking-visualizer.html">Backtracking</a>
   </div>
 
-  <p class="foot">Counts you set here live in this browser. <code>PROGRESS.md</code> stays the source of truth &mdash; use Export to update it.</p>
+  <p class="foot">Core is the finish line; extras are for a finished topic that still feels shaky &mdash; four topics only.
+  Counts live in this browser. <code>PROGRESS.md</code> stays the source of truth &mdash; use Export to update it.</p>
 </div>
 
 <dialog id="dlg">
@@ -280,210 +303,206 @@ dialog::backdrop{background:rgba(8,12,20,.55)}
 <script>
 (function(){
   "use strict";
-  var TOPICS=[
-    {n:1,name:"Arrays & Hashing",total:22},{n:2,name:"Two Pointers",total:13},
-    {n:3,name:"Sliding Window",total:9},{n:4,name:"Binary Search",total:14},
-    {n:5,name:"Linked List",total:14},{n:6,name:"Stack",total:14},
-    {n:7,name:"Trees",total:23},{n:8,name:"Tries",total:4},
-    {n:9,name:"Backtracking",total:17},{n:10,name:"Heap / Priority Queue",total:12},
-    {n:11,name:"Graphs",total:21},{n:12,name:"Advanced Graphs",total:10},
-    {n:13,name:"1-D Dynamic Programming",total:17},{n:14,name:"2-D Dynamic Programming",total:16},
-    {n:15,name:"Greedy",total:14},{n:16,name:"Intervals",total:7},
-    {n:17,name:"Bit Manipulation",total:10},{n:18,name:"Math & Geometry",total:13}
+  // core = NeetCode 150 count, total = NeetCode 250 count. extra = total - core.
+  // Verified against neetcode.io: cores sum to 150, extras to 100.
+  // deep:1 = the four topics the plan says to go deep on (22 extras). Everything else is core-only.
+  var T=[
+    {n:1,name:"Arrays & Hashing",core:9,total:22},   {n:2,name:"Two Pointers",core:5,total:13},
+    {n:3,name:"Sliding Window",core:6,total:9},      {n:4,name:"Binary Search",core:7,total:14},
+    {n:5,name:"Linked List",core:11,total:14},       {n:6,name:"Stack",core:6,total:14},
+    {n:7,name:"Trees",core:15,total:23},             {n:8,name:"Tries",core:3,total:4},
+    {n:9,name:"Backtracking",core:10,total:17},      {n:10,name:"Heap / Priority Queue",core:7,total:12},
+    {n:11,name:"Graphs",core:13,total:21,deep:1,t250:16},
+    {n:12,name:"Advanced Graphs",core:6,total:10,deep:1,t250:0},
+    {n:13,name:"1-D Dynamic Programming",core:12,total:17,deep:1,t250:0},
+    {n:14,name:"2-D Dynamic Programming",core:11,total:16,deep:1,t250:0},
+    {n:15,name:"Greedy",core:8,total:14,t250:0},     {n:16,name:"Intervals",core:6,total:7,t250:0},
+    {n:17,name:"Bit Manipulation",core:7,total:10,t250:0}, {n:18,name:"Math & Geometry",core:8,total:13,t250:0}
   ];
-  var TOTAL=250, OVERALL=76, STREAK={cur:0,best:54};
+  T.forEach(function(t){ t.extra=t.total-t.core; });
+  var CORE_TOTAL=150, PLANNED=T.reduce(function(a,t){return a+(t.deep?t.extra:0);},0);
+  var OVERALL250=76, STREAK={cur:0,best:54}, CURRENT_N=11, KEY="dsa-journey-v2";
   var DIFF=[{k:"Easy",s:20,t:60,c:"var(--accent)"},{k:"Medium",s:49,t:155,c:"var(--amber)"},{k:"Hard",s:7,t:35,c:"var(--hard)"}];
-  // Confirmed from the dashboard. Topics 1-10 are deliberately null, not zero: unknown is not the same as none.
-  var BASE={11:16,12:0,13:0,14:0,15:0,16:0,17:0,18:0};
-  var KEY="dsa-journey-progress-v1";
-  var solved={};
+  var core={}, extra={};
 
   function load(){
-    TOPICS.forEach(function(t){ solved[t.n]=(t.n in BASE)?BASE[t.n]:null; });
-    try{
-      var raw=localStorage.getItem(KEY);
-      if(raw){ var o=JSON.parse(raw); TOPICS.forEach(function(t){
-        if(o && Object.prototype.hasOwnProperty.call(o,t.n)){
-          var v=o[t.n]; solved[t.n]=(v===null||v==="")?null:Math.max(0,Math.min(t.total,parseInt(v,10)||0));
-        }}); }
+    T.forEach(function(t){
+      var known=(t.t250===0);            // 0 solved in the 250 view means 0 core and 0 extra
+      core[t.n]=known?0:null; extra[t.n]=known?0:null;
+    });
+    try{ var o=JSON.parse(localStorage.getItem(KEY)||"null");
+      if(o) T.forEach(function(t){
+        if(o.c&&t.n in o.c) core[t.n]=o.c[t.n]===null?null:Math.max(0,Math.min(t.core,o.c[t.n]));
+        if(o.x&&t.n in o.x) extra[t.n]=o.x[t.n]===null?null:Math.max(0,Math.min(t.extra,o.x[t.n]));
+      });
     }catch(e){}
   }
-  function save(){ try{ localStorage.setItem(KEY,JSON.stringify(solved)); }catch(e){} }
-
-  function placed(){ return TOPICS.reduce(function(a,t){ return a+(solved[t.n]===null?0:solved[t.n]); },0); }
-  function unknownCount(){ return TOPICS.filter(function(t){ return solved[t.n]===null; }).length; }
-  // The live topic is where the dashboard says they are (Graphs), not the first row with a gap.
-  // Unknown rows are skipped: an unfilled count is not evidence of unfinished work.
-  var CURRENT_N=11;
-  function firstOpen(){
+  function save(){ try{ localStorage.setItem(KEY,JSON.stringify({c:core,x:extra})); }catch(e){} }
+  function sum(m){ return T.reduce(function(a,t){ return a+(m[t.n]===null?0:m[t.n]); },0); }
+  function unknown(){ return T.filter(function(t){ return core[t.n]===null; }).length; }
+  function plannedDone(){ return T.reduce(function(a,t){ return a+((t.deep&&extra[t.n])?extra[t.n]:0); },0); }
+  function bonusDone(){ return T.reduce(function(a,t){ return a+((!t.deep&&extra[t.n])?extra[t.n]:0); },0); }
+  function live(){
     var i,t;
-    for(i=CURRENT_N-1;i<TOPICS.length;i++){ t=TOPICS[i]; if(solved[t.n]!==null&&solved[t.n]<t.total) return t; }
-    for(i=0;i<TOPICS.length;i++){ t=TOPICS[i]; if(solved[t.n]!==null&&solved[t.n]<t.total) return t; }
-    for(i=0;i<TOPICS.length;i++){ t=TOPICS[i]; if(solved[t.n]===null) return t; }
+    for(i=CURRENT_N-1;i<T.length;i++){ t=T[i]; if(core[t.n]===null||core[t.n]<t.core) return t; }
+    for(i=0;i<T.length;i++){ t=T[i]; if(core[t.n]===null||core[t.n]<t.core) return t; }
     return null;
   }
 
-  var elLadder=document.getElementById("ladder");
-  function buildLadder(){
-    var html="";
-    TOPICS.forEach(function(t){
-      var v=solved[t.n], done=(v!==null&&v>=t.total), pct=(v===null)?0:Math.round(v/t.total*100);
-      html+='<div class="row'+(done?" done":"")+'" data-n="'+t.n+'">'
-        + '<span class="rnum">'+t.n+'</span>'
-        + '<span class="rname">'+t.name+'<span class="tag" hidden>now</span></span>'
-        + '<span class="rbar'+(v===null?" unknown":"")+'"><i style="width:'+pct+'%"></i></span>'
-        + '<span class="rctl">'
-          + '<button class="stepper" type="button" data-d="-1" aria-label="One fewer in '+t.name+'">&minus;</button>'
-          + '<input class="cnt" type="number" inputmode="numeric" min="0" max="'+t.total+'" placeholder="&mdash;" value="'+(v===null?"":v)+'" aria-label="Problems solved in '+t.name+'">'
-          + '<button class="stepper" type="button" data-d="1" aria-label="One more in '+t.name+'">+</button>'
-        + '</span>'
-        + '<span class="rtot">/'+t.total+'</span></div>';
-    });
-    elLadder.innerHTML=html;
+  var lad=document.getElementById("ladder");
+  function build(){
+    lad.innerHTML=T.map(function(t){
+      return '<div class="row" data-n="'+t.n+'">'
+       +'<span class="rnum">'+t.n+'</span>'
+       +'<span class="rname">'+t.name+'<span class="tag" hidden>now</span>'
+         +(t.deep?'<span class="deep">go deep</span>':'')+'</span>'
+       +'<span class="cell core">'
+         +'<button class="stepper" type="button" data-k="c" data-d="-1" aria-label="One fewer core in '+t.name+'">&minus;</button>'
+         +'<input class="cnt" data-k="c" type="number" inputmode="numeric" min="0" max="'+t.core+'" placeholder="&mdash;" aria-label="Core solved in '+t.name+'">'
+         +'<button class="stepper" type="button" data-k="c" data-d="1" aria-label="One more core in '+t.name+'">+</button>'
+         +'<span class="den">/'+t.core+'</span></span>'
+       +'<span class="cell extra'+(t.deep?'':' skip')+'"'+(t.deep?'':' title="Optional — only if this topic still feels shaky"')+'>'
+         +'<button class="stepper" type="button" data-k="x" data-d="-1" aria-label="One fewer extra in '+t.name+'">&minus;</button>'
+         +'<input class="cnt" data-k="x" type="number" inputmode="numeric" min="0" max="'+t.extra+'" placeholder="&mdash;" aria-label="Extras solved in '+t.name+'">'
+         +'<button class="stepper" type="button" data-k="x" data-d="1" aria-label="One more extra in '+t.name+'">+</button>'
+         +'<span class="den">/'+t.extra+'</span></span>'
+       +'</div>';
+    }).join("");
   }
 
-  var LINES_UNKNOWN=[
-    "There are {u} topics I can't see yet. Fill any one in and the picture sharpens.",
-    "Tell me what you've done in the early topics — type a number in any greyed row.",
-    "I'd rather show you nothing than show you a guess. Fill in a row when you can."
-  ];
-  var LINES_CURRENT=[
-    "{left} left in {topic}. That's {days}.",
-    "{topic} is the live one. {left} to go, then it closes for good.",
-    "You're {pct}% through {topic}. The last few are the ones that make it stick."
-  ];
-  var LINES_DONE=[
-    "Every topic is full. That's the whole 250.",
-    "The ladder is finished. Go build something with it."
-  ];
-  var LINES_GENERAL=[
-    "{medium} mediums done. That's the number interviews actually care about.",
-    "{left} problems left. At one a day that's {months} — and you've got until mid-2027.",
-    "Your best run was {best} days. {left} left is about three more of those.",
-    "No streak today, and that's just a number. The next one starts whenever you open a problem."
-  ];
-
-  function pick(arr,seed){ return arr[seed%arr.length]; }
-  function fmtDays(n){ if(n<=1) return "a day"; if(n<7) return n+" days"; var w=Math.round(n/7); return w<=1?"about a week":"about "+w+" weeks"; }
-  function fill(s,ctx){ return s.replace(/\{(\w+)\}/g,function(m,k){ return (k in ctx)?ctx[k]:m; }); }
-
+  var L={
+    unfilled:["Core counts are missing for {u} topics. Flip your dashboard to the NeetCode 150 view — they're right there.",
+              "I can show you a floor, not a total, until those {u} topics are filled in.",
+              "Fill a core count and the ring stops guessing. {u} to go."],
+    live:["{left} core left in {topic}.","{topic} — {left} core problems and it closes.",
+          "{topic} is the live one. Core only: {left} left."],
+    deep:["{topic} is one of the four worth going deep on. Core first, extras only if it's still shaky.",
+          "Extras here are recommended, not required. Finish the core and see how it feels."],
+    plan:["The finish line is 150, not 250. Seventy-eight of those extras you're meant to skip.",
+          "Twenty-two extras in the plan, all of them in graphs and DP. Everything behind you is done at core.",
+          "Your best run was 54 days. Core is 150 — that's what finishing actually looks like.",
+          "No streak today. That's a number, not a verdict; the next one starts when you open a problem."]
+  };
   var spin=0;
   function speak(){
-    var cur=firstOpen(), unk=unknownCount(), left=TOTAL-OVERALL;
-    var pool, ctx={left:left,best:STREAK.best,medium:49,u:unk,months:"late April 2027"};
-    if(!cur){ pool=LINES_DONE; }
-    else{
-      ctx.topic=cur.name;
-      var have=(solved[cur.n]===null?0:solved[cur.n]);
-      ctx.left=cur.total-have; ctx.days=fmtDays(cur.total-have);
-      ctx.pct=Math.round(have/cur.total*100);
-      pool=(unk>0 && spin%3===0)?LINES_UNKNOWN:(spin%2===0?LINES_CURRENT:LINES_GENERAL);
-      if(unk>0 && spin%3===0){ ctx.left=left; }
-    }
-    document.getElementById("buddyLine").textContent=fill(pick(pool,spin),ctx);
+    var t=live(), u=unknown(), pool, c={u:u};
+    if(!t){ document.getElementById("buddyLine").textContent="Every core topic is full. That's the 150."; return; }
+    c.topic=t.name; c.left=t.core-(core[t.n]||0);
+    if(u>0&&spin%3===0) pool=L.unfilled;
+    else if(t.deep&&spin%4===1) pool=L.deep;
+    else pool=(spin%2===0)?L.live:L.plan;
+    document.getElementById("buddyLine").textContent=
+      pool[spin%pool.length].replace(/\{(\w+)\}/g,function(m,k){ return (k in c)?c[k]:m; });
     spin++;
   }
 
   function render(){
-    var p=placed(), unk=unknownCount(), cur=firstOpen();
-    document.getElementById("ringNum").textContent=OVERALL;
-    var C=2*Math.PI*56;
-    document.getElementById("ringFill").style.strokeDashoffset=String(C-(OVERALL/TOTAL)*C);
+    var cd=sum(core), u=unknown(), t=live(), C=2*Math.PI*56;
+    document.getElementById("ringNum").textContent=(u>0?"≥":"")+cd;
+    document.getElementById("ringFill").style.strokeDashoffset=String(C-(cd/CORE_TOTAL)*C);
+    document.getElementById("leftNum").textContent=(u>0?"≤":"")+(CORE_TOTAL-cd);
     document.getElementById("cStreak").textContent=STREAK.cur;
     document.getElementById("bStreak").textContent=STREAK.best;
-    document.getElementById("leftNum").textContent=TOTAL-OVERALL;
+
+    var pd=plannedDone(), bd=bonusDone();
+    document.getElementById("xFill").style.width=Math.min(100,pd/PLANNED*100)+"%";
+    document.getElementById("xVal").textContent=pd+" / "+PLANNED+(bd?"  +"+bd:"");
 
     document.getElementById("dsplit").innerHTML=DIFF.map(function(d){
-      return '<div class="drow"><span class="dname">'+d.k+'</span>'
-        +'<span class="dbar"><i style="width:'+(d.s/d.t*100)+'%;background:'+d.c+'"></i></span>'
-        +'<span class="dval">'+d.s+" / "+d.t+'</span></div>';
+      return '<div class="drow"><span class="dname">'+d.k+'</span><span class="dbar"><i style="width:'
+        +(d.s/d.t*100)+'%;background:'+d.c+'"></i></span><span class="dval">'+d.s+" / "+d.t+'</span></div>';
     }).join("");
 
-    var note=document.getElementById("note"), diff=OVERALL-p;
+    var placed=cd+sum(extra), note=document.getElementById("note"), diff=OVERALL250-placed;
     note.className="note";
-    if(unk>0){
-      note.innerHTML="<div><b>"+diff+"</b> of your "+OVERALL+" solved aren't placed on a topic yet, across <b>"+unk+
-        "</b> topics. Type a count into any greyed row and this reconciles itself.</div>";
+    if(u>0){
+      note.innerHTML="<div>Core isn't filled in for <b>"+u+"</b> topics, so <b>"+cd+"</b> is a floor, not a total. "
+        +"Switch the dashboard to the <b>NeetCode 150</b> view and copy the per-topic numbers across.</div>";
     } else if(diff===0){
       note.className="note ok";
-      note.innerHTML="<div>Every topic is accounted for. <b>"+p+"</b> placed, <b>"+OVERALL+"</b> on the dashboard &mdash; they match.</div>";
+      note.innerHTML="<div>Reconciled. <b>"+cd+"</b> core + <b>"+sum(extra)+"</b> extras = <b>"+placed+"</b>, which matches the 250 view.</div>";
     } else {
       note.className="note bad";
-      note.innerHTML="<div>Topics add up to <b>"+p+"</b> but the dashboard says <b>"+OVERALL+
-        "</b>. A difference of <b>"+(diff>0?"+":"")+diff+"</b> means one of them is wrong &mdash; trust the dashboard.</div>";
+      note.innerHTML="<div><b>"+cd+"</b> core + <b>"+sum(extra)+"</b> extras = <b>"+placed+"</b>, but the 250 view says <b>"
+        +OVERALL250+"</b>. Off by <b>"+(diff>0?"+":"")+diff+"</b> &mdash; trust the dashboard and fix a row.</div>";
     }
 
-    Array.prototype.forEach.call(elLadder.querySelectorAll(".row"),function(row){
-      var n=+row.dataset.n, t=TOPICS[n-1], v=solved[n];
-      var bar=row.querySelector(".rbar"), inp=row.querySelector(".cnt");
-      bar.classList.toggle("unknown",v===null);
-      bar.querySelector("i").style.width=(v===null?0:Math.round(v/t.total*100))+"%";
-      if(document.activeElement!==inp) inp.value=(v===null?"":v);
-      row.classList.toggle("done",v!==null&&v>=t.total);
-      row.classList.toggle("current",!!cur&&cur.n===n);
-      row.querySelector(".tag").hidden=!(cur&&cur.n===n);
-      row.querySelector('[data-d="-1"]').disabled=(v===null||v<=0);
-      row.querySelector('[data-d="1"]').disabled=(v!==null&&v>=t.total);
+    Array.prototype.forEach.call(lad.children,function(row){
+      var n=+row.dataset.n, t2=T[n-1];
+      var ci=row.querySelector('.cnt[data-k="c"]'), xi=row.querySelector('.cnt[data-k="x"]');
+      if(document.activeElement!==ci) ci.value=(core[n]===null?"":core[n]);
+      if(document.activeElement!==xi) xi.value=(extra[n]===null?"":extra[n]);
+      row.classList.toggle("done",core[n]!==null&&core[n]>=t2.core);
+      row.classList.toggle("current",!!t&&t.n===n);
+      row.querySelector(".tag").hidden=!(t&&t.n===n);
+      row.querySelector('[data-k="c"][data-d="-1"]').disabled=(core[n]===null||core[n]<=0);
+      row.querySelector('[data-k="c"][data-d="1"]').disabled=(core[n]!==null&&core[n]>=t2.core);
+      row.querySelector('[data-k="x"][data-d="-1"]').disabled=(extra[n]===null||extra[n]<=0);
+      row.querySelector('[data-k="x"][data-d="1"]').disabled=(extra[n]!==null&&extra[n]>=t2.extra);
     });
   }
 
-  function setVal(n,v){
-    var t=TOPICS[n-1];
-    solved[n]=(v===null)?null:Math.max(0,Math.min(t.total,v));
+  function set(n,k,v){
+    var t=T[n-1], cap=(k==="c")?t.core:t.extra, m=(k==="c")?core:extra;
+    m[n]=(v===null)?null:Math.max(0,Math.min(cap,v));
+    // Where the 250-view count is known, the other half follows from it rather than being guessed.
+    if(k==="c"&&typeof t.t250==="number"&&m[n]!==null){
+      var d=t.t250-m[n]; if(d>=0&&d<=t.extra) extra[n]=d;
+    }
     save(); render();
   }
 
-  elLadder.addEventListener("click",function(e){
+  lad.addEventListener("click",function(e){
     var b=e.target.closest(".stepper"); if(!b) return;
-    var n=+b.closest(".row").dataset.n, cur=solved[n];
-    setVal(n,(cur===null?0:cur)+(+b.dataset.d));
-    speak();
+    var n=+b.closest(".row").dataset.n, k=b.dataset.k, cur=(k==="c"?core:extra)[n];
+    set(n,k,(cur===null?0:cur)+(+b.dataset.d)); speak();
   });
-  elLadder.addEventListener("input",function(e){
+  lad.addEventListener("input",function(e){
     var i=e.target.closest(".cnt"); if(!i) return;
-    var n=+i.closest(".row").dataset.n, before=unknownCount();
-    setVal(n, i.value.trim()===""?null:parseInt(i.value,10)||0);
-    if(unknownCount()!==before) speak();
+    var n=+i.closest(".row").dataset.n, before=unknown();
+    set(n,i.dataset.k,i.value.trim()===""?null:parseInt(i.value,10)||0);
+    if(unknown()!==before) speak();
   });
 
   document.getElementById("buddyBtn").addEventListener("click",function(){
-    speak();
-    var m=document.getElementById("mouth");
+    speak(); var m=document.getElementById("mouth");
     m.setAttribute("d","M33 54 Q40 62 47 54"); setTimeout(function(){ m.setAttribute("d","M34 55 Q40 60 46 55"); },420);
   });
 
   document.getElementById("exportBtn").addEventListener("click",function(){
-    var lines=["| # | Topic | Solved | Total | Feel |","|---|---|---|---|---|"];
-    TOPICS.forEach(function(t){
-      var v=solved[t.n];
-      lines.push("| "+t.n+" | "+t.name+" | "+(v===null?"":v)+" | "+t.total+" | "+(v===null?"":(v>=t.total?"🟢":(v>0?"🟡":"⬜")))+" |");
+    var f=function(v){ return v===null?"":String(v); };
+    var rows=T.map(function(t){
+      var cv=core[t.n], done=(cv!==null&&cv>=t.core);
+      return "| "+t.n+" | "+t.name+" | "+f(cv)+" | "+t.core+" | "+f(extra[t.n])+" | "+t.extra
+        +" | "+(t.deep?"go deep":"skip")+" | "+(cv===null?"":(done?"🟢":(cv>0?"🟡":"⬜")))+" |";
     });
-    lines.push("| | **Total** | **"+placed()+"** | **250** | |");
     document.getElementById("dlgText").value=
-      "**Overall: "+OVERALL+" / 250**  ·  Easy 20/60 · Medium 49/155 · Hard 7/35\n"+
-      "**Streak:** "+STREAK.cur+" current · "+STREAK.best+" best\n\n"+lines.join("\n")+"\n";
+      "**Core: "+sum(core)+" / 150**"+(unknown()?"  (floor — "+unknown()+" topics unfilled)":"")
+      +"  ·  **Extras: "+plannedDone()+" / "+PLANNED+" planned**"
+      +(bonusDone()?" +"+bonusDone()+" beyond plan":"")+"\n"
+      +"**250 view:** "+OVERALL250+" / 250  ·  Easy 20/60 · Medium 49/155 · Hard 7/35\n"
+      +"**Streak:** "+STREAK.cur+" current · "+STREAK.best+" best\n\n"
+      +"| # | Topic | Core | /150 | Extra | /100 | Plan | Feel |\n|---|---|---|---|---|---|---|---|\n"
+      +rows.join("\n")+"\n| | **Total** | **"+sum(core)+"** | **150** | **"+sum(extra)+"** | **100** | | |\n";
     document.getElementById("dlg").showModal();
   });
   document.getElementById("copyBtn").addEventListener("click",function(){
-    var ta=document.getElementById("dlgText"), btn=this;
-    function ok(){ btn.textContent="Copied"; setTimeout(function(){ btn.textContent="Copy"; },1600); }
-    try{
-      navigator.clipboard.writeText(ta.value).then(ok,function(){ ta.select(); ok(); });
-    }catch(e){ ta.select(); ok(); }
+    var ta=document.getElementById("dlgText"), b=this;
+    function ok(){ b.textContent="Copied"; setTimeout(function(){ b.textContent="Copy"; },1600); }
+    try{ navigator.clipboard.writeText(ta.value).then(ok,function(){ ta.select(); ok(); }); }
+    catch(e){ ta.select(); ok(); }
   });
   document.getElementById("resetBtn").addEventListener("click",function(){
     try{ localStorage.removeItem(KEY); }catch(e){}
-    load(); buildLadder(); render(); spin=0; speak();
+    load(); build(); render(); spin=0; speak();
   });
   document.getElementById("themeBtn").addEventListener("click",function(){
-    var r=document.documentElement;
-    var now=r.getAttribute("data-theme");
-    var sysDark=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;
-    var isDark=now?now==="dark":sysDark;
-    r.setAttribute("data-theme",isDark?"light":"dark");
+    var r=document.documentElement, now=r.getAttribute("data-theme");
+    var sys=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;
+    r.setAttribute("data-theme",(now?now==="dark":sys)?"light":"dark");
   });
 
-  load(); buildLadder(); render(); speak();
+  load(); build(); render(); speak();
 })();
 </script>
 </body>

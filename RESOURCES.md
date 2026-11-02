@@ -14,7 +14,8 @@ listicles are not research. What's below is either free, or paid and named as su
 
 | Resource | Cost | What it's for |
 |---|---|---|
-| [NeetCode 250](https://neetcode.io/practice/practice/neetcode250) | Free | The tracked list. Every problem has a video. This is the plan; everything else is support. |
+| [NeetCode 150](https://neetcode.io/practice/practice/neetcode150) | Free | **The finish line.** Every problem has a video. This is the plan; everything else is support. |
+| [NeetCode 250](https://neetcode.io/practice/practice/neetcode250) | Free | The same 150 plus 100 extras. Used only as a remedy — 22 of them, in Graphs, Advanced Graphs and DP. |
 | [NeetCode — Advanced Algorithms](https://neetcode.io/courses/advanced-algorithms/0) | Free | Dijkstra, union-find, MST, topological sort. Watch this **before** topic 12, not during. |
 | [CP-Algorithms](https://cp-algorithms.com/) | Free | The reference for *how an algorithm actually works*, with correct C++ already written. When NeetCode shows you the idea and you want the rigorous version, it's here. |
 | [VisuAlgo](https://visualgo.net/en) | Free | Watch a structure move. Built by Steven Halim (author of *Competitive Programming*), not a toy. Good for heaps, tries, union-find, and the graph algorithms. |
@@ -39,9 +40,10 @@ these are algorithms you implement rather than derive.
 - [VisuAlgo](https://visualgo.net/en) for union-find and MST specifically — they're much
   easier watched than read.
 
-### The big one — Dynamic Programming (33 problems: 17 one-dimensional, 16 two-dimensional)
+### The big one — Dynamic Programming (23 core + 10 extras, both halves)
 
-**This is 13% of the whole list and the single largest block ahead of you.** It's also the
+**This is the single largest block ahead of you, and the only place outside graphs where the
+plan says go deep.** It's also the
 topic most people bounce off, and the reason is almost always the same: trying to pattern-match
 DP problems the way you pattern-match two-pointer problems. It doesn't work. DP is a method —
 define the state, define the transition, decide the order — and the method is what transfers.

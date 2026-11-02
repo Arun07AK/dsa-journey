@@ -2,12 +2,14 @@
 
 ## Current Status (2026-11-02)
 
-**Sheet: NeetCode 250.** This is the one that's actually tracked — the earlier Striver TUF
-figure in this file was stale and has been replaced.
+**Sheet: NeetCode.** The **150 is the finish line**; the 250's extra 100 are a remedy for a
+finished topic that still feels shaky, not a syllabus. Four topics take their extras by
+default — Graphs, Advanced Graphs, 1-D DP, 2-D DP — which is **22 in, 78 out**, for a real
+target of **172**. The rule, from `finish-150.html`: *don't pre-grind the extras.*
 
-**Counts live in [`PROGRESS.md`](PROGRESS.md)** — that's the tracker, and it's the only
-place the numbers are written down. In short: **76 / 250**, at the end of **Graphs** (16/21),
-current streak 0, best streak 54.
+**Counts live in [`PROGRESS.md`](PROGRESS.md)** — the only place numbers are written down.
+In short: **76 solved in the 250 view**, at the end of **Graphs** (16/21), streak 0, best 54.
+The core-vs-extra split of those 76 is the one open number; the dashboard's 150 view gives it.
 
 - Primary language: C++ (keep this for DSA)
 - Secondary: Python, after the graph section closes
@@ -21,10 +23,11 @@ Don't solve random problems. Master one topic at a time, in roadmap order.
 
 ### Topic order
 
-The 18 NeetCode 250 topics in roadmap order, with per-topic counts and feel, are tracked in
-[`PROGRESS.md`](PROGRESS.md). Work them in order and **finish a topic before opening the
-next one** — the roadmap's dependencies are real, and a half-done topic is the thing that
-makes the whole list feel endless.
+The 18 topics in roadmap order, with core/extra counts and feel, are tracked in
+[`PROGRESS.md`](PROGRESS.md). Work them in order and **finish a topic's core before opening
+the next one** — the roadmap's dependencies are real, and a half-done topic is the thing that
+makes the whole list feel endless. Extras come after a core topic closes, only where it's
+still shaky, and only in the four deep topics by default.
 
 Resources for each topic, researched and link-checked, are in [`RESOURCES.md`](RESOURCES.md).
 
@@ -55,7 +58,7 @@ gate — and showing up daily is a thing you can clearly do (you ship in 24-hr s
 80 people). The real target is the post-3rd-year internship (~mid-2027). On time, with runway.
 
 ## Resources
-- **Primary:** NeetCode 250 roadmap — this is the tracked sheet
+- **Primary:** NeetCode **150** — the finish line. The 250 supplies the optional extras.
 - **Supplementary:** Striver's TUF (~75 problems of history there; not actively tracked)
 - **Contest practice:** Codeforces Div 2 (A + B problems to start)
 - **Video explanations:** NeetCode YouTube, Striver YouTube

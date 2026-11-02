@@ -9,8 +9,8 @@ On a great day, do five. The streak is tracked on the NeetCode dashboard and it'
 break — when it does, write the zero down and pick the next problem in the same sitting.
 Missing a day is not failure; not writing in here for a *week* is the thing to notice.
 
-> Where this stands (Nov 2026): **76 / 250**, end of the Graphs section (16/21).
-> Full breakdown in [`PROGRESS.md`](PROGRESS.md).
+> Where this stands (Nov 2026): target is the **NeetCode 150 core + 22 extras**; 76 solved in
+> the 250 view, end of the Graphs section (16/21). Breakdown in [`PROGRESS.md`](PROGRESS.md).
 
 ---
 

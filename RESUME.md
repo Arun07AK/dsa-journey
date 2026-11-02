@@ -11,14 +11,15 @@ Keep it short. If it grows past one screen it's become a log, and the log is `so
 
 **Updated:** 2026-11-02
 
-**NeetCode 250 — 76 / 250 solved.** Easy 20/60 · Medium 49/155 · Hard 7/35.
-Current streak **0 days** · best streak **54 days**.
+**Target: NeetCode 150 core + 22 extras = 172.** The other 78 extras are skipped by plan.
+**76 solved in the 250 view** (Easy 20/60 · Medium 49/155 · Hard 7/35); the core-vs-extra
+split of those 76 is not yet known. Streak **0** · best **54 days**.
 
 - **Position: end of the Graphs section — 16 of 21.** Five problems close it out.
-- **The front half is not finished.** Topics 1-10 hold 142 problems and roughly 60 are done
-  (~42%) — "end of Graphs" is a roadmap position, not coverage. See `PROGRESS.md`.
-- The back half (Advanced Graphs, 1-D DP, 2-D DP, Greedy, Intervals, Bit Manipulation,
-  Math & Geometry — 87 problems) is untouched.
+- Topics 1-10 are **core-only** (56 extras skipped). Their core counts aren't filled in yet.
+- The four **go deep** topics are Graphs, Advanced Graphs, 1-D DP, 2-D DP — where you are and
+  what's next. Every extra in the plan sits in that stretch.
+- Rows 12-18 are confirmed 0 in the 250 view, so 0 core and 0 extras there.
 - **Language:** C++.
 - **Already has a visualizer:** sliding window (all 5 shapes), binary search on rotated
   arrays (LC 33, LC 153), BFS/DFS, multi-source BFS (LC 994), backtracking trees.
@@ -29,14 +30,15 @@ Current streak **0 days** · best streak **54 days**.
 
 ## Next action
 
-**Close out Graphs** — 5 problems left of 21. Then fill in the blank per-topic rows in
-`PROGRESS.md` from the dashboard, which is the one real gap in the tracking right now.
+**Fill in the 150-view core counts** — one pass over the dashboard, typed into `index.html`.
+Then close out Graphs core (13) before moving to Advanced Graphs.
 Don't open 1-D DP until the Graphs row reads 21/21.
 
 ## Open threads
 
-- **Per-topic counts for topics 1–10 are blank in `PROGRESS.md`.** They're the only unknown
-  in the whole tracker; one pass over the dashboard closes it. Rows 12–18 are confirmed 0.
+- **The core/extra split of the 76 is the one open number.** Switch the dashboard to the
+  🚀 NeetCode 150 view, read the per-topic core counts, type them into `index.html`, export.
+  Until then the tracker shows a floor (`≥`), which is correct but understates you.
 - `solved.md` still has the placeholder entry dated 2026-06-07 at the bottom of the log.
   Delete it when the first real entry goes in.
 - Striver's TUF (~75 problems of history) is no longer the tracked sheet. Left as history.
